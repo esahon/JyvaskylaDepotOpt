@@ -2,24 +2,25 @@ import pandas as pd
 from datetime import datetime
 
 class Bus:
-    def __init__(self, bus_id, bus_type, departure_time):
+    def __init__(self, bus_id, bus_fuel, bus_type, bus_color, departure_time):
         self.bus_id = bus_id
+        self.bus_fuel = bus_fuel
         self.bus_type = bus_type
+        self.bus_color = bus_color
         self.departure_time = departure_time  # Säilytetään `time`-muodossa
 
     def __repr__(self):
-        return f"Bus(ID={self.bus_id}, Type={self.bus_type}, Departure={self.departure_time})"
+        return f"Bus(ID={self.bus_id}, Fuel={self.bus_fuel}, Type={self.bus_type}, Color={self.bus_color}, Departure={self.departure_time})"
 
 # Bussityyppien määrittely (alkuliitteet ilman XXX)
 BUS_TYPE_MAPPING = {
-    "DMS": "Diesel",
-    "DMV": "Diesel",
-    "DTV": "Diesel",
-    "SMS": "Electric",
-    "SMV": "Electric",
-    "STS": "Electric",
-    "STV": "Electric",
-    "SVV": "Electric",
+    "DMS": {"fuel": "Biodiesel", "type": "2-aks.", "color": "Super"},
+    "DMV": {"fuel": "Biodiesel", "type": "2-aks.", "color": "Vihreä"},
+    "DTV": {"fuel": "Biodiesel", "type": "Teli", "color": "Vihreä"},
+    "SMS": {"fuel": "Sähkö", "type": "2-aks.", "color": "Super"},
+    "SMV": {"fuel": "Sähkö", "type": "2-aks.", "color": "Vihreä"},
+    "STS": {"fuel": "Sähkö", "type": "Teli", "color": "Super"},
+    "STV": {"fuel": "Sähkö", "type": "Teli", "color": "Vihreä"},
 }
 
 def process_buses_from_excel(file_path):
@@ -45,25 +46,41 @@ def process_buses_from_excel(file_path):
     df = df.drop_duplicates(subset=["Tunnus"], keep="first")  # Pidä ensimmäinen rivi jokaiselle Tunnukselle
     print(df)
     # Luo bussit DataFramesta
-    buses = []
+    busses = []
     for _, row in df.iterrows():
         bus_id = row["Tunnus"]
         departure_time = row["Lähtöaika"]
 
         # Selvitä bussityyppi tarkistamalla alkuliite
-        bus_type = next((key for key in BUS_TYPE_MAPPING.keys() if bus_id.startswith(key)), None)
-        fuel_type = BUS_TYPE_MAPPING.get(bus_type)
+        bus_type_key = next((key for key in BUS_TYPE_MAPPING.keys() if bus_id.startswith(key)), None)
+        bus_type_mapping = BUS_TYPE_MAPPING.get(bus_type_key)
+
+        bus_fuel = bus_type_mapping["fuel"]
+        bus_type = bus_type_mapping["type"]
+        bus_color = bus_type_mapping["color"]
 
         # Luo bussi-olio
-        bus = Bus(bus_id, fuel_type, departure_time)
-        buses.append(bus)
+        bus = Bus(bus_id, bus_fuel, bus_type, bus_color, departure_time)
+        busses.append(bus)
 
-    return buses
+    return busses
 
 
 # TESTI
 if __name__ == "__main__":
     file_path = "data/KAJSYK24_MA-TO.xlsx"
     print(file_path)
-    buses = process_buses_from_excel(file_path)
-    print(buses[:10])
+    busses = process_buses_from_excel(file_path)
+    print(busses[:5])
+
+    bus_id_to_find = "SMV501"
+    for bus in busses:
+        if bus.bus_id == bus_id_to_find:
+            bus_found = bus
+            break
+
+    if bus_found:
+        print(f"\nBus with ID {bus_id_to_find}:")
+        print(bus_found)
+    else:
+        print(f"\nNo bus found with ID {bus_id_to_find}")
