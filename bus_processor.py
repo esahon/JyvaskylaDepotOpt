@@ -80,9 +80,9 @@ if __name__ == "__main__":
     bus_type_list = bus_type_list[:-4]
     #print(bus_type_list)
 
-    l = 18  # Number of lanes
-    v = 5  # Total number of bus slots
-    max_deviation = 25
+    l = 10  # Number of lanes
+    v = 9  # Total number of bus slots
+    max_deviation = 10
     arrivals = bus_type_list
     departures = bus_type_list
 
