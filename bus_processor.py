@@ -1,6 +1,11 @@
 import pandas as pd
 from datetime import datetime
 
+from julia import Main
+
+# Load Julia script
+Main.include("k_position_approach.jl")
+
 class Bus:
     def __init__(self, bus_id, bus_fuel, bus_type, bus_color, departure_time):
         self.bus_id = bus_id
@@ -71,7 +76,19 @@ if __name__ == "__main__":
     file_path = "data/KAJSYK24_MA-TO.xlsx"
     print(file_path)
     busses = process_buses_from_excel(file_path)
-    print(busses[:5])
+    bus_type_list = [bus.bus_id[:3] for bus in busses]
+    bus_type_list = bus_type_list[:-4]
+    #print(bus_type_list)
+
+    l = 18  # Number of lanes
+    v = 5  # Total number of bus slots
+    max_deviation = 25
+    arrivals = bus_type_list
+    departures = bus_type_list
+
+    # Call the function with parameters
+    X, Y, Z = Main.optimize_model_k_approach(l, v, max_deviation, arrivals, departures)
+
 
     bus_id_to_find = "SMV501"
     for bus in busses:

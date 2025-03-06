@@ -292,12 +292,12 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
 
     optimize!(model)
 
-    println("")
-    println("Variable X (values represent the number of lanes partitioned according to pattern *index number of X*):")
-    println(JuMP.value.(X))
-    println("")
-    println("Variable Y (the number of lanes partitioned according to pattern p ∈ P2 whose exit block is full when the arrival in position i ∈ I has just been parked):")
-    println(JuMP.value.(Y))
+    #println("")
+    #println("Variable X (values represent the number of lanes partitioned according to pattern *index number of X*):")
+    #println(JuMP.value.(X))
+    #println("")
+    #println("Variable Y (the number of lanes partitioned according to pattern p ∈ P2 whose exit block is full when the arrival in position i ∈ I has just been parked):")
+    #println(JuMP.value.(Y))
 
     return JuMP.value.(X), JuMP.value.(Y), JuMP.value.(Z)
 end
