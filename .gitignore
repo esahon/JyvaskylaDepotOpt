@@ -1,0 +1,28 @@
+# Byte-compiled / cached files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+
+# Distribution / packaging
+.Python
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log
+
+# IDE / Editor files
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
