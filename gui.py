@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QWidget, QGridLayout, QPushButton, QHBoxLayout, QVBoxLayout
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtWidgets import QSizePolicy
+from bus_processor import process_buses_from_excel
 
 class DepotBlock(QPushButton):
     """A clickable block representing a bus depot space."""
@@ -18,9 +19,10 @@ class DepotBlock(QPushButton):
         self.update_style()
 
     def update_style(self):
-        """Update appearance based on block state."""
+        """Update appearance based on block state and bus type."""
         state = self.depot_system.get_block_state(self.x, self.y)
-        self.setText("On" if state else "Off")
+        bus_type = self.depot_system.get_bus_type(self.x, self.y)
+        self.setText(bus_type if bus_type else ("On" if state else "Off"))
         self.setStyleSheet("background-color: red;" if not state else "background-color: green;")
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
@@ -55,8 +57,8 @@ class DepotGUI(QWidget):
         # Add the button layout to the main layout at the top
         main_layout.addLayout(button_layout)
 
-        # Increase window size and add margins for the grid layout
-        self.setGeometry(100, 100, 800, 600)
+        # Adjust window size and margins for the grid layout
+        self.setGeometry(100, 100, 800, 600)  # Keep the same window size
         self.layout.setSpacing(5)
         self.layout.setContentsMargins(20, 20, 20, 20)
 
@@ -72,8 +74,52 @@ class DepotGUI(QWidget):
         self.setLayout(main_layout)
 
     def optimize(self):
-        """Call the Julia function to optimize the depot state."""
-        self.depot_system.send_to_julia()
+        """Call the Julia function to optimize the depot state and update GUI."""
+        # Process buses from the Excel file
+        file_path = "data/KAJSYK24_MA-TO.xlsx"  # Update with the correct file path
+        busses = process_buses_from_excel(file_path)
+
+        # Extract arrivals and departures as bus types
+        arrivals = [bus.bus_id[:3] for bus in busses]
+        departures = arrivals  # Assuming departures are the same as arrivals for now
+
+        l = self.depot_system.rows  # Number of lanes
+        v = self.depot_system.cols  # Total number of bus slots
+        max_deviation = 10
+
+        # Debugging: Print the data being sent to Julia
+        print("GUI -> Julia: l =", l)
+        print("GUI -> Julia: v =", v)
+        print("GUI -> Julia: max_deviation =", max_deviation)
+        print("GUI -> Julia: arrivals =", arrivals)
+        print("GUI -> Julia: departures =", departures)
+
+        # Call the Julia function with the bus type list
+        X, Y, Z = self.depot_system.send_to_julia_with_params(l, v, max_deviation, arrivals, departures)
+
+        # Map the results to the GUI
+        assignments = self.map_bus_types_to_spots(Z)
+        self.depot_system.assign_buses(assignments)
+        self.update_blocks()
+
+        # Ensure the GUI size remains unchanged
+        self.setFixedSize(self.size())
+
+    def map_bus_types_to_spots(self, bus_types):
+        """Map bus types to available spots in the depot."""
+        assignments = {}
+        index = 0
+        for i in range(self.depot_system.rows):
+            for j in range(self.depot_system.cols):
+                if self.depot_system.get_block_state(i, j) and index < len(bus_types):
+                    assignments[(i, j)] = bus_types[index]
+                    index += 1
+        return assignments
+
+    def update_blocks(self):
+        """Refresh the GUI blocks to reflect the updated assignments."""
+        for block in self.blocks.values():
+            block.update_style()
 
     def print_matrix(self):
         """Print the depot matrix to the terminal."""

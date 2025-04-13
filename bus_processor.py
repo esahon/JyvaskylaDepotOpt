@@ -2,6 +2,7 @@ import pandas as pd
 from datetime import datetime
 
 from julia import Main
+from collections import Counter
 
 # Load Julia script
 Main.include("k_position_approach.jl")
@@ -21,7 +22,6 @@ class Bus:
 BUS_TYPE_MAPPING = {
     "DMS": {"fuel": "Biodiesel", "type": "2-aks.", "color": "Super"},
     "DMV": {"fuel": "Biodiesel", "type": "2-aks.", "color": "Vihreä"},
-    "DTV": {"fuel": "Biodiesel", "type": "Teli", "color": "Vihreä"},
     "SMS": {"fuel": "Sähkö", "type": "2-aks.", "color": "Super"},
     "SMV": {"fuel": "Sähkö", "type": "2-aks.", "color": "Vihreä"},
     "STS": {"fuel": "Sähkö", "type": "Teli", "color": "Super"},
@@ -49,7 +49,6 @@ def process_buses_from_excel(file_path):
     # Pidä vain jokaisen Tunnuksen ensimmäinen Lähtöaika
     df = df.sort_values(by="Lähtöaika")  # Järjestä lähtöajat aikajärjestykseen
     df = df.drop_duplicates(subset=["Tunnus"], keep="first")  # Pidä ensimmäinen rivi jokaiselle Tunnukselle
-    print(df)
     # Luo bussit DataFramesta
     busses = []
     for _, row in df.iterrows():
@@ -76,19 +75,61 @@ if __name__ == "__main__":
     file_path = "data/KAJSYK24_MA-TO.xlsx"
     print(file_path)
     busses = process_buses_from_excel(file_path)
-    bus_type_list = [bus.bus_id[:3] for bus in busses]
-    bus_type_list = bus_type_list[:-4]
-    #print(bus_type_list)
+    #bus_type_list = bus_type_list[:-4]
+    
 
-    l = 10  # Number of lanes
-    v = 9  # Total number of bus slots
-    max_deviation = 10
+    # Filter out "teli" type buses
+    teli_buses = [bus for bus in busses if "Teli" in bus.bus_type]
+
+    # Sort "teli" buses by departure time in descending order
+    teli_buses_sorted = sorted(teli_buses, key=lambda x: x.departure_time, reverse=True)
+
+    # Keep only the five "teli" buses with the latest departure times
+    teli_buses_to_keep = teli_buses_sorted[:5]
+
+    # Create the bus_type_list with only the required buses
+    bus_type_list = [
+        bus.bus_id[:3] for bus in busses 
+        if "Teli" not in bus.bus_type or bus in teli_buses_to_keep
+    ]
+
+    # Print the "teli" buses remaining in the list after filtering
+    teli_buses_remaining = [
+        bus for bus in busses 
+        if "Teli" in bus.bus_type and bus in teli_buses_to_keep
+    ]
+    print("\nTeli buses remaining after filtering:")
+    for bus in teli_buses_remaining:
+        print(bus)
+    
+    # Remove the last "DMV" type bus from bus_type_list
+    for i in range(len(bus_type_list) - 1, -1, -1):
+        if bus_type_list[i] == "DMV":
+            del bus_type_list[i]
+            break
+
+    # Print the final bus_type_list
+    print(f"\nBuses in bus_type_list: {len(bus_type_list)}")
+    print("\nFinal bus_type_list:")
+    print(bus_type_list)
+
+    type_counts = Counter(bus_type_list)
+    print(f"\nNumber of different types in bus_type_list: {len(type_counts)}")
+    print("Counts of each type:")
+    for bus_type, count in type_counts.items():
+        print(f"{bus_type}: {count}")
+
+
+    l = 12  # Number of lanes
+    v = 6  # Total number of bus slots
+    max_deviation = 5
     arrivals = bus_type_list
     departures = bus_type_list
 
     # Call the function with parameters
+    # X on vektori, jonka arvot kertovat patternien määrän kullekin patternin indexille.
+    #  Esim: [1, 0, 3, 0] -> 1 kpl pattern 1, 0 kpl pattern 2, 3 kpl pattern 3, 0 kpl pattern 4
     X, Y, Z = Main.optimize_model_k_approach(l, v, max_deviation, arrivals, departures)
-
 
     bus_id_to_find = "SMV501"
     for bus in busses:
