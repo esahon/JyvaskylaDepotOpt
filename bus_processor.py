@@ -78,7 +78,7 @@ def process_buses_from_excel(file_path):
 
 # TESTI
 if __name__ == "__main__":
-    file_path = "data/KAJSYK24_PE.xlsx"
+    file_path = "data/KAJSYK24_MA-TO.xlsx"
     print(file_path)
     busses = process_buses_from_excel(file_path)
     #bus_type_list = bus_type_list[:-4]
@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
     l = 12  # Number of lanes
     v = 6  # Total number of bus slots
-    max_deviation = 1
+    max_deviation = 5
     arrivals = []
     
     while bus_type_list_increasing_arrival:
