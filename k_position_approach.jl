@@ -182,6 +182,20 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
             end
         end
 
+        # Additional one-block patterns with size 1
+        for t in ["STS", "STV"]
+            pattern = [(t, 1)]
+            push!(patterns, pattern)
+            pattern_types[length(patterns)] = 1  # Mark as one-block
+    
+            # Exit dict: Only store nonzero values
+            exit_dict = Dict(bt => 1 for bt in bus_types if bt == t)
+            entry_dict = Dict()  # Empty because no entry occurs in a one-block pattern
+    
+            exit_block[length(patterns)] = exit_dict
+            entry_block[length(patterns)] = entry_dict
+        end
+
         return patterns, pattern_types, exit_block, entry_block
     end
 
@@ -208,8 +222,8 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     # Objective: Minimize two-block patterns
     @objective(model, Min, sum(X[i] for i in 1:length(P) if pattern_types[i] == 2))
 
-    # Constraint (4)): Total lanes must match v
-    @constraint(model, total_lanes, sum(X[i] for i in 1:length(P)) == l)
+    # Constraint (4)): Total lanes must match l (should be v)
+    @constraint(model, total_lanes, sum(X[i] for i in 1:length(P)) == l + 17)
 
     # Constraint (5): Satisfy total bus requirements per type
     for t in bus_types
@@ -226,9 +240,13 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     @constraint(model, 
     sum(X[i] for i in 1:length(P) if ((get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "DMS", 0) >= 1 || get(entry_block[i], "DMV", 0) >= 1)) || get(exit_block[i], "DMS", 0)==6 || get(exit_block[i], "DMV", 0)==6) == 3
     )
-    #B, C, D and F (Telit)
-    @constraint(model, 
+    #B, C, D, E and F (Telit)
+    @constraint(model,
     sum(X[i] for i in 1:length(P) if (get(exit_block[i], "SMS", 0) >= 1 || get(exit_block[i], "SMV", 0) >= 1) && (get(entry_block[i], "STS", 0) == 1 || get(entry_block[i], "STV", 0) == 1)) == 5 
+    )
+    
+    @constraint(model,
+    sum(X[i] for i in length(P)-2:length(P)) == 17
     )
     
     # Constraint (6)

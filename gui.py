@@ -85,7 +85,7 @@ class DepotGUI(QWidget):
 
         l = self.depot_system.rows  # Number of lanes
         v = self.depot_system.cols  # Total number of bus slots
-        max_deviation = 10
+        max_deviation = 5
 
         # Debugging: Print the data being sent to Julia
         print("GUI -> Julia: l =", l)
