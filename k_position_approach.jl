@@ -182,6 +182,20 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
             end
         end
 
+        # Additional one-block patterns with size 1
+        for t in ["STS", "STV"]
+            pattern = [(t, 1)]
+            push!(patterns, pattern)
+            pattern_types[length(patterns)] = 1  # Mark as one-block
+    
+            # Exit dict: Only store nonzero values
+            exit_dict = Dict(bt => 1 for bt in bus_types if bt == t)
+            entry_dict = Dict()  # Empty because no entry occurs in a one-block pattern
+    
+            exit_block[length(patterns)] = exit_dict
+            entry_block[length(patterns)] = entry_dict
+        end
+
         return patterns, pattern_types, exit_block, entry_block
     end
 
@@ -208,14 +222,33 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     # Objective: Minimize two-block patterns
     @objective(model, Min, sum(X[i] for i in 1:length(P) if pattern_types[i] == 2))
 
-    # Constraint (4)): Total lanes must match v
-    @constraint(model, total_lanes, sum(X[i] for i in 1:length(P)) == l)
+    # Constraint (4)): Total lanes must match l (should be v)
+    @constraint(model, total_lanes, sum(X[i] for i in 1:length(P)) == l + 17)
 
     # Constraint (5): Satisfy total bus requirements per type
     for t in bus_types
         @constraint(model, sum((get(exit_block[i], t, 0) + get(entry_block[i], t, 0)) * X[i] for i in 1:length(P)) == b[t])
     end
 
+    # Add a constraint to ensure at least one pattern includes an exit block with exactly one bus of type 'SMV' 
+    
+    # Select H, I and J
+    @constraint(model, 
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) == 3 
+    )
+    # G, K and L
+    @constraint(model, 
+    sum(X[i] for i in 1:length(P) if ((get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "DMS", 0) >= 1 || get(entry_block[i], "DMV", 0) >= 1)) || get(exit_block[i], "DMS", 0)==6 || get(exit_block[i], "DMV", 0)==6) == 3
+    )
+    #B, C, D, E and F (Telit)
+    @constraint(model,
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "SMS", 0) >= 1 || get(exit_block[i], "SMV", 0) >= 1) && (get(entry_block[i], "STS", 0) == 1 || get(entry_block[i], "STV", 0) == 1)) == 5 
+    )
+    
+    @constraint(model,
+    sum(X[i] for i in length(P)-2:length(P)) == 17
+    )
+    
     # Constraint (6)
     for t in bus_types
         for i in indices_high[t]  # Loop through indices for each bus type
@@ -292,12 +325,33 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
 
     optimize!(model)
 
-    #println("")
-    #println("Variable X (values represent the number of lanes partitioned according to pattern *index number of X*):")
-    #println(JuMP.value.(X))
-    #println("")
-    #println("Variable Y (the number of lanes partitioned according to pattern p ∈ P2 whose exit block is full when the arrival in position i ∈ I has just been parked):")
-    #println(JuMP.value.(Y))
+    println("")
+    println("Variable X (values represent the number of lanes partitioned according to pattern *index number of X*):")
+    println(JuMP.value.(X))
+    println("")
+    println("Variable Y (the number of lanes partitioned according to pattern p ∈ P2 whose exit block is full when the arrival in position i ∈ I has just been parked):")
+    println(JuMP.value.(Y))
+
+    println("")
+    println("Total buses assigned across all patterns:")
+    total_buses_assigned = sum((get(exit_block[i], t, 0) + get(entry_block[i], t, 0)) * JuMP.value(X[i]) for i in 1:length(P), t in bus_types)
+    println(total_buses_assigned)
+    println("Expected total buses: ", sum(values(b)))
+
+    # Print the selected patterns
+    println("")
+    println("Selected Patterns:")
+    for i in 1:length(P)
+        if JuMP.value(X[i]) > 0
+            println("Pattern $i: ", P[i], " - Type: ", pattern_types[i], " - Exit block: ", exit_block[i], " - Entry block: ", entry_block[i], " - Count: ", JuMP.value(X[i]))
+        end
+    end
+
+    #println("Number of patterns with 'STS' in entry block selected:")
+    #println(sum(JuMP.value(X[i]) for i in 1:length(P) if get(entry_block[i], "STS", 0) == 1))
+
+    #println("Number of patterns with 'DMV' in exit block selected:")
+    #println(sum(JuMP.value(X[i]) for i in 1:length(P) if get(exit_block[i], "DMV", 0) == 1))
 
     return JuMP.value.(X), JuMP.value.(Y), JuMP.value.(Z)
 end
