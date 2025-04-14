@@ -7,6 +7,7 @@ from collections import Counter
 
 # Load Julia script
 Main.include("k_position_approach.jl")
+Main.include("k_position_approach_PELA.jl")  # Load the correct Julia script
 
 class Bus:
     def __init__(self, bus_id, bus_fuel, bus_type, bus_color, departure_time, arrival_time):
@@ -28,6 +29,7 @@ BUS_TYPE_MAPPING = {
     "SMV": {"fuel": "Sähkö", "type": "2-aks.", "color": "Vihreä"},
     "STS": {"fuel": "Sähkö", "type": "Teli", "color": "Super"},
     "STV": {"fuel": "Sähkö", "type": "Teli", "color": "Vihreä"},
+    "SVV": {"fuel": "Sähkö", "type": "Volvo", "color": "Vihreä"}
 }
 
 def process_buses_from_excel(file_path):
@@ -83,6 +85,13 @@ if __name__ == "__main__":
     busses = process_buses_from_excel(file_path)
     #bus_type_list = bus_type_list[:-4]
     
+    # Convert "SVV" buses to "SMV" type
+    for bus in busses:
+        if bus.bus_id[:3] == "SVV":
+            bus.bus_id = bus.bus_id.replace("SVV", "SMV", 1)
+            bus.bus_fuel = BUS_TYPE_MAPPING["SMV"]["fuel"]
+            bus.bus_type = BUS_TYPE_MAPPING["SMV"]["type"]
+            bus.bus_color = BUS_TYPE_MAPPING["SMV"]["color"]
 
     # Filter out "teli" type buses
     teli_buses = [bus for bus in busses if "Teli" in bus.bus_type]
@@ -159,7 +168,11 @@ if __name__ == "__main__":
     # Call the function with parameters
     # X on vektori, jonka arvot kertovat patternien määrän kullekin patternin indexille.
     #  Esim: [1, 0, 3, 0] -> 1 kpl pattern 1, 0 kpl pattern 2, 3 kpl pattern 3, 0 kpl pattern 4
+
     X, Y, Z = Main.optimize_model_k_approach(l, v, max_deviation, arrivals, departures)
+    #l_pela = 6
+    #v_pela = 6
+    #X, Y, Z = Main.optimize_model_k_approach_PELA(l_pela, v_pela, max_deviation, arrivals, departures)
 
     bus_id_to_find = "SMV501"
     for bus in busses:

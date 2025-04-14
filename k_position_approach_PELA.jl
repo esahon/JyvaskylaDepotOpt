@@ -1,6 +1,6 @@
 using JuMP, HiGHS
 
-function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals, departures)
+function optimize_model_k_approach_PELA(l::Int, v::Int, max_deviation::Int, arrivals, departures)
     # Convert Python list to Julia array
     arrivals = collect(arrivals)
     departures = collect(departures)
@@ -223,7 +223,7 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     @objective(model, Min, sum(X[i] for i in 1:length(P) if pattern_types[i] == 2))
 
     # Constraint (4)): Total lanes must match l (should be v)
-    @constraint(model, total_lanes, sum(X[i] for i in 1:length(P)) == l + 17)
+    @constraint(model, total_lanes, sum(X[i] for i in 1:length(P)) == l + 13)
 
     # Constraint (5): Satisfy total bus requirements per type
     for t in bus_types
