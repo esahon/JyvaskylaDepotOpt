@@ -182,8 +182,22 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
             end
         end
 
-        # Additional one-block patterns with size 1
+        # Additional one-block patterns with size 1 (Teli)
         for t in ["STS", "STV"]
+            pattern = [(t, 1)]
+            push!(patterns, pattern)
+            pattern_types[length(patterns)] = 1  # Mark as one-block
+    
+            # Exit dict: Only store nonzero values
+            exit_dict = Dict(bt => 1 for bt in bus_types if bt == t)
+            entry_dict = Dict()  # Empty because no entry occurs in a one-block pattern
+    
+            exit_block[length(patterns)] = exit_dict
+            entry_block[length(patterns)] = entry_dict
+        end
+
+        # Additional one-block patterns with size 1 (Diesel)
+        for t in ["DMV", "DMS"]
             pattern = [(t, 1)]
             push!(patterns, pattern)
             pattern_types[length(patterns)] = 1  # Mark as one-block
@@ -223,7 +237,7 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     @objective(model, Min, sum(X[i] for i in 1:length(P) if pattern_types[i] == 2))
 
     # Constraint (4)): Total lanes must match l (should be v)
-    @constraint(model, total_lanes, sum(X[i] for i in 1:length(P)) == l + 17)
+    @constraint(model, total_lanes, sum(X[i] for i in 1:length(P)) == l + 17 + 4)
 
     # Constraint (5): Satisfy total bus requirements per type
     for t in bus_types
@@ -234,20 +248,46 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     
     # Select H, I and J
     @constraint(model, 
-    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) == 3 
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) <= 3 + 0.001 
+    )
+    @constraint(model, 
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) >= 3 - 0.001
     )
     # G, K and L
     @constraint(model, 
-    sum(X[i] for i in 1:length(P) if ((get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "DMS", 0) >= 1 || get(entry_block[i], "DMV", 0) >= 1)) || get(exit_block[i], "DMS", 0)==6 || get(exit_block[i], "DMV", 0)==6) == 3
+    sum(X[i] for i in 1:length(P) if ((get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "DMS", 0) >= 1 || get(entry_block[i], "DMV", 0) >= 1)) || get(exit_block[i], "DMS", 0)==6 || get(exit_block[i], "DMV", 0)==6) <= 3 + 0.001
+    )
+    @constraint(model, 
+    sum(X[i] for i in 1:length(P) if ((get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "DMS", 0) >= 1 || get(entry_block[i], "DMV", 0) >= 1)) || get(exit_block[i], "DMS", 0)==6 || get(exit_block[i], "DMV", 0)==6) >= 3 - 0.001
     )
     #B, C, D, E and F (Telit)
     @constraint(model,
-    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "SMS", 0) >= 1 || get(exit_block[i], "SMV", 0) >= 1) && (get(entry_block[i], "STS", 0) == 1 || get(entry_block[i], "STV", 0) == 1)) == 5 
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "SMS", 0) >= 1 || get(exit_block[i], "SMV", 0) >= 1) && (get(entry_block[i], "STS", 0) == 1 || get(entry_block[i], "STV", 0) == 1)) <= 5 + 0.001 
     )
+    @constraint(model,
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "SMS", 0) >= 1 || get(exit_block[i], "SMV", 0) >= 1) && (get(entry_block[i], "STS", 0) == 1 || get(entry_block[i], "STV", 0) == 1)) >= 5 - 0.001
+    )
+    # A
+    #@constraint(model,
+    #sum(X[i] for i in 1:length(P) if (get(exit_block[i], "SMS", 0) >= 1 || get(exit_block[i], "SMV", 0) >= 1) && (get(entry_block[i], "SMS", 0) >= 0 || get(entry_block[i], "SMV", 0) >= 0)) <= 1 + 0.001
+    #)
+    #@constraint(model,
+    #sum(X[i] for i in 1:length(P) if (get(exit_block[i], "SMS", 0) >= 1 || get(exit_block[i], "SMV", 0) >= 1) && (get(entry_block[i], "SMS", 0) >= 0 || get(entry_block[i], "SMV", 0) >= 0)) >= 1 - 0.001
+    #)
 
     @constraint(model,
-    sum(X[i] for i in length(P)-2:length(P)) == 17
+    sum(X[i] for i in length(P)-4:length(P)-2) <= 17 + 0.001
     )
+    @constraint(model,
+    sum(X[i] for i in length(P)-4:length(P)-2) >= 17 - 0.001
+    )
+
+    #@constraint(model,
+    #sum(X[i] for i in length(P)-1:length(P)) <= 4 + 0.001
+    #)
+    #@constraint(model,
+    #sum(X[i] for i in length(P)-1:length(P)) >= 4 - 0.001
+    #)
     
     # Constraint (6)
     for t in bus_types

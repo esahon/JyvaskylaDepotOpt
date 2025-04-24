@@ -1,8 +1,13 @@
 import pandas as pd
 from datetime import datetime
 import copy
+from julia import Main
 from collections import Counter
 
+
+# Load Julia script
+Main.include("k_position_approach.jl")
+Main.include("k_position_approach_PELA.jl")  # Load the correct Julia script
 
 class Bus:
     def __init__(self, bus_id, bus_fuel, bus_type, bus_color):
@@ -55,8 +60,8 @@ BUS_TYPE_MAPPING = {
     "SMV": {"fuel": "Sähkö", "type": "2-aks.", "color": "Vihreä"},
     "STS": {"fuel": "Sähkö", "type": "Teli", "color": "Super"},
     "STV": {"fuel": "Sähkö", "type": "Teli", "color": "Vihreä"},
-    "SVV": {"fuel": "Sähkö", "type": "Volvo", "color": "Vihreä"},
-    "DTV": {"fuel": "Biodiesel", "type": "Teli", "color": "Vihreä"}
+    "SVV": {"fuel": "Sähkö", "type": "Volvo", "color": "Vihreä"}
+    #"DTV": {"fuel": "Biodiesel", "type": "Teli", "color": "Vihreä"}
 }
 
 def all_arrivals_departures(file_paths):
@@ -69,8 +74,13 @@ def all_arrivals_departures(file_paths):
     df = df.dropna(subset=["Tunnus", "Lähtöaika", "Saapumisaika"])  # Poista tyhjät rivit
     df["Tunnus"] = df["Tunnus"].str.strip()  # Poista ylimääräiset välilyönnit
  
-    df["Lähtöaika"] = pd.to_datetime(df["Lähtöaika"], format="%H:%M:%S", errors="coerce").dt.time
-    df["Saapumisaika"] = pd.to_datetime(df["Saapumisaika"], format="%H:%M:%S", errors="coerce").dt.time
+    # Convert "Lähtöaika" and "Saapumisaika" to hours as decimals
+    df["Lähtöaika"] = pd.to_datetime(df["Lähtöaika"], format="%H:%M:%S", errors="coerce").apply(
+        lambda x: x.hour + x.minute / 60 if pd.notnull(x) else None
+    )
+    df["Saapumisaika"] = pd.to_datetime(df["Saapumisaika"], format="%H:%M:%S", errors="coerce").apply(
+        lambda x: x.hour + x.minute / 60 if pd.notnull(x) else None
+    )
     df = df.dropna(subset=["Lähtöaika", "Saapumisaika"])
 
     valid_types = list(BUS_TYPE_MAPPING.keys())
@@ -133,10 +143,13 @@ def all_arrivals_departures(file_paths):
         df_2["Tunnus"] = df_2["Tunnus"].str.strip()  # Poista ylimääräiset välilyönnit
 
     
-        df["Saapumisaika"] = pd.to_datetime(df["Saapumisaika"], format="%H:%M:%S", errors="coerce").dt.time
-        df_2["Lähtöaika"] = pd.to_datetime(df_2["Lähtöaika"], format="%H:%M:%S", errors="coerce").dt.time
-        df = df.dropna(subset=["Saapumisaika"])
-        df_2 = df_2.dropna(subset=["Lähtöaika"])
+        df["Saapumisaika"] = pd.to_datetime(df["Saapumisaika"], format="%H:%M:%S", errors="coerce").apply(
+            lambda x: x.hour + x.minute / 60 if pd.notnull(x) else None
+        )
+        df_2["Lähtöaika"] = pd.to_datetime(df_2["Lähtöaika"], format="%H:%M:%S", errors="coerce").apply(
+            lambda x: x.hour + x.minute / 60 if pd.notnull(x) else None
+        )
+        
         
         # Group by "Tunnus" and get the smallest "Lähtöaika" and largest "Saapumisaika"
         df = df.groupby("Tunnus").agg(
@@ -207,6 +220,30 @@ def all_arrivals_departures(file_paths):
 
     return busses
 
+def adjust_none_arrivals(busses):
+    """Adjust buses with None in arrival or departure times by adding 24 hours."""
+    count = 0
+    for bus in busses:
+        if bus.arrival_time_MAKE is None:
+            bus.arrival_time_MAKE = 24.0  
+        if bus.departure_time_TITO is None:
+            bus.departure_time_TITO = 24.0
+        if bus.arrival_time_TO is None:
+            bus.arrival_time_TO = 24.0
+        if bus.departure_time_PE is None:
+            bus.departure_time_PE = 24.0
+        if bus.arrival_time_PE is None:
+            bus.arrival_time_PE = 24.0
+        if bus.departure_time_LA is None:
+            bus.departure_time_LA = 24.0
+        if bus.arrival_time_LA is None:
+            bus.arrival_time_LA = 24.0
+        if bus.departure_time_SU is None:
+            bus.departure_time_SU = 24.0
+        if bus.arrival_time_SU is None:
+            bus.arrival_time_SU = 24.0
+        if bus.departure_time_MA is None:
+            bus.departure_time_MA = 24.0
 
 
 if __name__ == "__main__":
@@ -218,23 +255,67 @@ if __name__ == "__main__":
     file_paths = [file_path1, file_path2, file_path3, file_path4, file_path5]
     print(file_paths)
     busses = all_arrivals_departures(file_paths)
+    #print(busses)
 
+    # Convert "SVV" buses to "SMV" type
+    for bus in busses:
+        if bus.bus_id[:3] == "SVV":
+            bus.bus_id = bus.bus_id.replace("SVV", "SMV", 1)
+            bus.bus_fuel = BUS_TYPE_MAPPING["SMV"]["fuel"]
+            bus.bus_type = BUS_TYPE_MAPPING["SMV"]["type"]
+            bus.bus_color = BUS_TYPE_MAPPING["SMV"]["color"]
+
+    # Adjust None arrival times
+    #adjust_none_arrivals(busses)
 
     # PITÄÄ LISÄTÄ None aikoihin +24.00 per None arrival
+
+    # Remove buses with None values in any of the arrival or departure times
+    busses = [
+        bus for bus in busses
+        if None not in (
+            bus.arrival_time_MAKE, bus.departure_time_TITO
+        )
+    ]
 
     arrivals_MAKE = copy.copy(sorted(busses, key=lambda x: x.arrival_time_MAKE))
     departures_TITO = copy.copy(sorted(busses, key=lambda x: x.departure_time_TITO))
 
-    arrivals_TO = copy.copy(sorted(busses, key=lambda x: x.arrival_time_TO))
-    departures_PE = copy.copy(sorted(busses, key=lambda x: x.departure_time_PE))
+    #arrivals_TO = copy.copy(sorted(busses, key=lambda x: x.arrival_time_TO))
+    #departures_PE = copy.copy(sorted(busses, key=lambda x: x.departure_time_PE))
 
-    arrivals_PE = copy.copy(sorted(busses, key=lambda x: x.arrival_time_PE))
-    departures_LA = copy.copy(sorted(busses, key=lambda x: x.departure_time_LA))
+    #arrivals_PE = copy.copy(sorted(busses, key=lambda x: x.arrival_time_PE))
+    #departures_LA = copy.copy(sorted(busses, key=lambda x: x.departure_time_LA))
 
-    arrivals_LA = copy.copy(sorted(busses, key=lambda x: x.arrival_time_LA))
-    departures_SU = copy.copy(sorted(busses, key=lambda x: x.departure_time_SU))
+    #arrivals_LA = copy.copy(sorted(busses, key=lambda x: x.arrival_time_LA))
+    #departures_SU = copy.copy(sorted(busses, key=lambda x: x.departure_time_SU))
 
-    arrivals_SU = copy.copy(sorted(busses, key=lambda x: x.arrival_time_SU))
-    arrivals_MA = copy.copy(sorted(busses, key=lambda x: x.departure_time_MA))
+    #arrivals_SU = copy.copy(sorted(busses, key=lambda x: x.arrival_time_SU))
+    #arrivals_MA = copy.copy(sorted(busses, key=lambda x: x.departure_time_MA))
 
-    print(arrivals_MAKE)
+
+    arrivals_list_MAKE = []
+    
+    while arrivals_MAKE:
+        bus = arrivals_MAKE.pop(0)
+        arrivals_list_MAKE.append(bus.bus_id[:3])
+    
+    departures_list_TITO = []
+    while departures_TITO:
+        bus = departures_TITO.pop(0)
+        departures_list_TITO.append(bus.bus_id[:3])
+
+    print(f"\nArrivals: {len(arrivals_list_MAKE)}")
+    print(f"\nDepartures: {len(departures_list_TITO)}")
+
+    print(arrivals_list_MAKE[:4])
+    print("Nro of buses in arrivals_list_MAKE:")
+    print(len(arrivals_list_MAKE))
+    print("Nro of busess in departures_list_TITO:")
+    print(len(departures_list_TITO))
+
+    l = 12  # Number of lanes
+    v = 6  # Total number of bus slots
+    max_deviation = 5
+
+    X, Y, Z = Main.optimize_model_k_approach(l, v, max_deviation, arrivals_list_MAKE, departures_list_TITO)

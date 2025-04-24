@@ -94,19 +94,19 @@ if __name__ == "__main__":
             bus.bus_color = BUS_TYPE_MAPPING["SMV"]["color"]
 
     # Filter out "teli" type buses
-    teli_buses = [bus for bus in busses if "Teli" in bus.bus_type]
+    #teli_buses = [bus for bus in busses if "Teli" in bus.bus_type]
 
     # Sort "teli" buses by departure time in descending order
-    teli_buses_sorted = sorted(teli_buses, key=lambda x: (datetime.combine(datetime.min, x.arrival_time) - datetime.combine(datetime.min, x.departure_time)).total_seconds(), reverse=True)
+    #teli_buses_sorted = sorted(teli_buses, key=lambda x: (datetime.combine(datetime.min, x.arrival_time) - datetime.combine(datetime.min, x.departure_time)).total_seconds(), reverse=True)
 
     # Keep only the five "teli" buses with the latest departure times
-    teli_buses_to_keep = [
-        bus for bus in teli_buses_sorted 
-        if bus.departure_time <= datetime.strptime("08:00", "%H:%M").time()
-    ]
-    teli_buses_to_keep = teli_buses_to_keep[:5]
+    #teli_buses_to_keep = [
+    #    bus for bus in teli_buses_sorted 
+    #    if bus.departure_time <= datetime.strptime("08:00", "%H:%M").time()
+    #]
+    #teli_buses_to_keep = teli_buses_to_keep[:5]
 
-    print(teli_buses_to_keep)
+    #print(teli_buses_to_keep)
 
     # Create the bus_type_list with only the required buses
     bus_type_list = busses
@@ -120,9 +120,9 @@ if __name__ == "__main__":
     #for bus in teli_buses_remaining:
     #    print(bus)
     
-
-    if len(bus_type_list) > 72 + 17:
-        diff = len(bus_type_list) - 72 - 17
+    
+    if len(bus_type_list) > 72 + 17 + 4:
+        diff = len(bus_type_list) - 72 - 17 - 4
         dmv_count = 0
         for i in range(len(bus_type_list) - 1, -1, -1):
             if bus_type_list[i].bus_id[:3] == "DMV":
@@ -130,6 +130,8 @@ if __name__ == "__main__":
                 dmv_count += 1
             if dmv_count == diff:
                 break
+     
+    
     print("Size of bus_type_list:")
     print(len(bus_type_list))
 
@@ -164,6 +166,9 @@ if __name__ == "__main__":
 
     print(f"\nArrivals: {arrivals}")
     print(f"\nDepartures: {departures}")
+
+    print(f"\nArrivals: {len(arrivals)}")
+    print(f"\nDepartures: {len(departures)}")
 
     # Call the function with parameters
     # X on vektori, jonka arvot kertovat patternien määrän kullekin patternin indexille.
