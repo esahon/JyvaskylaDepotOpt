@@ -393,5 +393,5 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     #println("Number of patterns with 'DMV' in exit block selected:")
     #println(sum(JuMP.value(X[i]) for i in 1:length(P) if get(exit_block[i], "DMV", 0) == 1))
 
-    return JuMP.value.(X), JuMP.value.(Y), JuMP.value.(Z)
+    return JuMP.value.(X), JuMP.value.(Y), JuMP.value.(Z), P
 end
