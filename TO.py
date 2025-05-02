@@ -338,14 +338,18 @@ if __name__ == "__main__":
     v = 6  # Total number of bus slots
     max_deviation = 5
 
-    X, Y, Z , P = Main.optimize_model_k_approach(l, v, max_deviation, arrivals_list_TO, departures_list_PE)
-
+    X, Y, Z, P = Main.optimize_model_k_approach(l, v, max_deviation, arrivals_list_TO, departures_list_PE)
 
     lanes_list = []
+    printed_patterns = set()  # To track already printed patterns
+
     for i, pat in enumerate(P):
         if X[i] > 0.99:
-            for j in range(round(X[i])):
+            pat_key = tuple(pat)  # Convert list to tuple so it can be hashed
+            if pat_key not in printed_patterns:
                 print(f"Pattern {i+1}: {round(X[i])} instances of, {pat} pattern")
+                printed_patterns.add(pat_key)
+            for j in range(round(X[i])):
                 obj = Lane(pat, i)
                 lanes_list.append(obj)
 
