@@ -304,7 +304,7 @@ if __name__ == "__main__":
     departures_list_TITO = []
     for_dispatching = []
     for bus in departures_TITO:
-        for_disptaching.append(bus.bus_id)
+        for_dispatching.append(bus.bus_id)
         departures_list_TITO.append(bus.bus_id[:3])
 
     print(f"\nArrivals: {len(arrivals_list_MAKE)}")
