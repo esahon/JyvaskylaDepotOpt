@@ -19,7 +19,7 @@ class Lane:
         return f"Lane:{self.name}, having pattern ({self.length} blocks)"
 
 
-def parking(lanes, arrivals, Y, P):
+def parking(lanes, arrivals): #, Y, P):
     """
     Assigns arriving buses to available lanes based on their order of arrival.
 
@@ -41,6 +41,7 @@ def parking(lanes, arrivals, Y, P):
 
     # Dictionary of type to list of lanes with that type as the type of exit block
     # where the list of lanes is sorted according to Hamdouni et al. 2006
+    '''
     L = {}
 
     for t in types:
@@ -50,7 +51,7 @@ def parking(lanes, arrivals, Y, P):
         for i in I:
             mti = sum(Y[P.index(p)][i - 1] for p in Pt)
             mts.append(mti)
-        
+    '''  
 
 
     for arrival in arrivals:
@@ -82,15 +83,16 @@ def parking(lanes, arrivals, Y, P):
                     # Increment the number of busses in this lane and append the bus to the list of busses in this lane
                     mapping[lane]["entryBlock"].append(arrival)
                     mapping[lane]["entrySize"] += 1
+                    done = True
                     break # Stop scanning other lanes for this bus
-            
+        if not done:
             # What the fuck happened, this bus can not be parked anywhere
             print("--------------------------------------")
             print("Bus", arrival, "can not be parked anywhere")
             print("--------------------------------------")
 
     for lane in lanes:
-        print(f"Lane {lane.name}: exitBlock = {mapping[lane]["exitBlock"]}, entryBlock = {mapping[lane]["entryBlock"]}")
+        print(f"Lane {lane.name}: exitBlock = {mapping[lane]['exitBlock']}, entryBlock = {mapping[lane]['entryBlock']}")
 
     return mapping
 
@@ -135,17 +137,20 @@ def dispatching(lanes, mapping, departures):
         if not done:
             for lane in lanes:
                 # Lastly two block pattern lane with non-empty entry blcok with correct type
-                if not lane.type and mapping[lane]["entrySize"] > 0 and lane.entry_type == departure[:3]:
+                if not lane.type and mapping[lane]['exitSize'] == 0 and mapping[lane]["entrySize"] > 0 and lane.entry_type == departure[:3]:
                     eilisenAutoKierto = mapping[lane]["entryBlock"].pop(0)
                     mapping[lane]["entrySize"] -= 1
                     departuresWithID[lane].append(departure)
                     done = True
                     break
-            
+        if not done:
             # What happened, this departure can not be dispatched from anywhere
             print("--------------------------------------")
             print("The departure", departure, "could not be dispatched from anywhere")
             print("--------------------------------------")
+
+    for lane in lanes:
+        print(f"Lane {lane.name}: Block = {departuresWithID[lane]}")
             
     return departuresWithID
 

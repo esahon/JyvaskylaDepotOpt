@@ -3,7 +3,7 @@ from datetime import datetime
 import copy
 from julia import Main
 from collections import Counter
-from parking_busses import Lane, parking
+from parking_busses import Lane, parking, dispatching
 
 
 # Load Julia script
@@ -302,7 +302,9 @@ if __name__ == "__main__":
         arrivals_list_MAKE.append(bus.bus_id[:3])
     
     departures_list_TITO = []
+    for_dispaching = []
     for bus in departures_TITO:
+        for_dispaching.append(bus.bus_id)
         departures_list_TITO.append(bus.bus_id[:3])
 
     print(f"\nArrivals: {len(arrivals_list_MAKE)}")
@@ -336,3 +338,4 @@ if __name__ == "__main__":
 
 
     buses_mapped = parking(lanes_list, for_parking)
+    lanes = dispatching(lanes_list, buses_mapped, for_dispaching)
