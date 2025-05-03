@@ -155,13 +155,11 @@ if __name__ == "__main__":
     max_deviation = 5
     arrivals = []
     
-    while bus_type_list_increasing_arrival:
-        bus = bus_type_list_increasing_arrival.pop(0)
+    for bus in bus_type_list_increasing_arrival:
         arrivals.append(bus.bus_id[:3])
     
     departures = []
-    while bus_type_list_increasing_departure:
-        bus = bus_type_list_increasing_departure.pop(0)
+    for bus in bus_type_list_increasing_departure:
         departures.append(bus.bus_id[:3])
 
     print(f"\nArrivals: {arrivals}")
