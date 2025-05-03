@@ -1,4 +1,5 @@
 import numpy as np
+from copy import copy
 
 class Lane:
     def __init__(self, pattern, name):
@@ -16,10 +17,11 @@ class Lane:
         self.outside_parking = self.length == 1 # Boolean
     
     def __str__(self):
-        return f"Lane:{self.name}, having pattern ({self.length} blocks)"
+        print(f"Lane {self.name}, having pattern {self.blocks}")
+        return
 
 
-def parking(lanes, arrivals): #, Y, P):
+def parking(lanes, arrivals, Y, P):
     """
     Assigns arriving buses to available lanes based on their order of arrival.
 
@@ -31,8 +33,10 @@ def parking(lanes, arrivals): #, Y, P):
     Returns:
     dict: A mapping of Lane objects to lists of tuples (List[Bus], block_size), exit and entry block
     """
+    print("\n------------")
+    print("Parking algorithm")
     n = len(arrivals)
-    I = range(1, n+1)
+    I = range(0, n)
     # Dictionary of Lane to list of tuples (busid, current block_size), first one is exit block, second entry block
     mapping = {lane: {"exitBlock": [], "exitSize": 0, "entryBlock": [], "entrySize": 0} for lane in lanes}
 
@@ -41,32 +45,62 @@ def parking(lanes, arrivals): #, Y, P):
 
     # Dictionary of type to list of lanes with that type as the type of exit block
     # where the list of lanes is sorted according to Hamdouni et al. 2006
-    '''
-    L = {}
+    lanes_copy = copy(lanes)
+    
+    L = {t: [] for t in types}
 
     for t in types:
         # Set of two block patterns of, where exit type is of type t
         Pt = [lane.blocks for lane in lanes if lane.exit_type == t and not lane.type]
         mts = [0]
         for i in I:
-            mti = sum(Y[P.index(p)][i - 1] for p in Pt)
+            mti = sum(Y[P.index(p)][i] for p in Pt) # p =  [("DMV", 5), ("STS", 1)]
             mts.append(mti)
-    '''  
+        
+        indexes = []
+        i_prev = 0
+        for i in I:
+            if mts[i] > mts[i_prev]:
+                indexes.append(i)
+            i_prev = i
+
+        for i in indexes:
+            for p in Pt:
+                for j in range(0, int(Y[P.index(p)][i]) - int(Y[P.index(p)][i - 1]) + 1):
+                    for k, lane in enumerate(lanes_copy):
+                        if lane.blocks == p:
+                            lanes_copy.pop(k)
+                            L[t].append(lane)
+        L[t] = list(reversed(L[t])) # Now reverse the two block patterns with exit type t? What is going on? This seems to work.
+
+    # Rest should be one block lanes
+    for lane in lanes_copy:
+        t = lane.exit_type
+        L[t].append(lane)
+
+    for t in types:
+        print("--------------")
+        print("Type: ", t)
+        for lane in L[t]:
+            lane.__str__()
+        print("\n")
 
 
     for arrival in arrivals:
         done = False
-        for lane in lanes:
+        t = arrival[:3]
+        for lane in L[t]:
             # If this lane has a two block pattern, where exit block is of the correct type and it is not full, park here
-            if not lane.type and arrival[:3] == lane.exit_type and mapping[lane]["exitSize"] < lane.exit_size:
+            if not lane.type and mapping[lane]["exitSize"] < lane.exit_size:
                 # Increment the number of busses in this lane and append the bus to the list of busses in this lane
                 mapping[lane]["exitBlock"].append(arrival)
                 mapping[lane]["exitSize"] += 1
                 done = True
+                assert t == lane.exit_type
                 break # Stop scanning other lanes for this bus
         
         if not done:
-            for lane in lanes:
+            for lane in L[t]:
                 # Else if this is a one block pattern, where exit block is of the correct type and it is not full, park here
                 if lane.type and arrival[:3] == lane.exit_type and mapping[lane]["exitSize"] < lane.exit_size:
                     # Increment the number of busses in this lane and append the bus to the list of busses in this lane
@@ -79,7 +113,7 @@ def parking(lanes, arrivals): #, Y, P):
         # where the entry block is of the correct type and is not full, park here.
         if not done:
             for lane in lanes:
-                if not lane.type and arrival[:3] == lane.entry_type and mapping[lane]["entrySize"] < lane.entry_size:
+                if not lane.type and t == lane.entry_type and mapping[lane]["entrySize"] < lane.entry_size:
                     # Increment the number of busses in this lane and append the bus to the list of busses in this lane
                     mapping[lane]["entryBlock"].append(arrival)
                     mapping[lane]["entrySize"] += 1
@@ -97,7 +131,7 @@ def parking(lanes, arrivals): #, Y, P):
     return mapping
 
 
-def dispatching(lanes, mapping, departures):
+def dispatching(lanes, mapping, departures, Z, P):
     """
     Assigns arriving buses to available lanes based on their order of arrival.
 
@@ -108,13 +142,65 @@ def dispatching(lanes, mapping, departures):
     Returns:
     dict: A mapping of Lane objects to lists of tuples (List[Bus], block_size), exit and entry block
     """
+
+    print("\n------------")
+    print("Dispatching algorithm")
+    n = len(departures)
+    I = range(0, n)
     
     # List of departuring lines e.g. ["DMV501", "DMV508", ...] in increasing order by departure time from depot
     departuresWithID = {lane: [] for lane in lanes}
 
+    # TODO: Sort list of lanes according to paper
+    types = list({lane.exit_type for lane in lanes}) # Set of all bus types in exit blocks
+
+    # Dictionary of type to list of lanes with that type as the type of exit block
+    # where the list of lanes is sorted according to Hamdouni et al. 2006
+    lanes_copy = copy(lanes)
+    
+    L = {t: [] for t in types}
+
+    for t in types:
+        # Set of two block patterns of, where exit type is of type t
+        Pt = [lane.blocks for lane in lanes if lane.exit_type == t and not lane.type]
+        mts = [0]
+        for i in I:
+            mti = sum(Z[P.index(p)][i] for p in Pt) # p =  [("DMV", 5), ("STS", 1)]
+            mts.append(mti)
+        
+        indexes = []
+        i_prev = 0
+        for i in I:
+            if mts[i] > mts[i_prev]:
+                indexes.append(i)
+            i_prev = i
+
+        for i in indexes:
+            for p in Pt:
+                for j in range(0, int(Z[P.index(p)][i]) - int(Z[P.index(p)][i - 1]) + 1):
+                    for k, lane in enumerate(lanes_copy):
+                        if lane.blocks == p:
+                            lanes_copy.pop(k)
+                            L[t].append(lane)
+        L[t] = list(reversed(L[t])) # Now reverse the two block patterns with exit type t? What is going on? This seems to work.
+
+    # Rest should be one block lanes
+    for lane in lanes_copy:
+        t = lane.exit_type
+        L[t].append(lane)
+
+    for t in types:
+        print("--------------")
+        print("Type: ", t)
+        for lane in L[t]:
+            lane.__str__()
+        print("\n")
+
+
     for departure in departures:
         done = False
-        for lane in lanes:
+        t = departure[:3]
+        for lane in L[t]:
             # First prioritize two block pattern lane with non-empty exit block with correct type
             if not lane.type and mapping[lane]["exitSize"] > 0 and lane.exit_type == departure[:3]:
                 eilisenAutoKierto = mapping[lane]["exitBlock"].pop(0) # Eilisen autokierto ID
@@ -125,7 +211,7 @@ def dispatching(lanes, mapping, departures):
                 break
         
         if not done:
-            for lane in lanes:
+            for lane in L[t]:
                 # Then one block pattern with non-empty exit block with correct type
                 if lane.type and mapping[lane]["exitSize"] > 0 and lane.exit_type == departure[:3]:
                     eilisenAutoKierto = mapping[lane]["exitBlock"].pop(0)
