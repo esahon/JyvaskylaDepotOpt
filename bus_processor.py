@@ -7,6 +7,7 @@ from collections import Counter
 
 # Load Julia script
 Main.include("k_position_approach.jl")
+Main.include("k_position_approach_PELA.jl")  # Load the correct Julia script
 
 class Bus:
     def __init__(self, bus_id, bus_fuel, bus_type, bus_color, departure_time, arrival_time):
@@ -28,6 +29,7 @@ BUS_TYPE_MAPPING = {
     "SMV": {"fuel": "Sähkö", "type": "2-aks.", "color": "Vihreä"},
     "STS": {"fuel": "Sähkö", "type": "Teli", "color": "Super"},
     "STV": {"fuel": "Sähkö", "type": "Teli", "color": "Vihreä"},
+    "SVV": {"fuel": "Sähkö", "type": "Volvo", "color": "Vihreä"}
 }
 
 def process_buses_from_excel(file_path):
@@ -83,21 +85,28 @@ if __name__ == "__main__":
     busses = process_buses_from_excel(file_path)
     #bus_type_list = bus_type_list[:-4]
     
+    # Convert "SVV" buses to "SMV" type
+    for bus in busses:
+        if bus.bus_id[:3] == "SVV":
+            bus.bus_id = bus.bus_id.replace("SVV", "SMV", 1)
+            bus.bus_fuel = BUS_TYPE_MAPPING["SMV"]["fuel"]
+            bus.bus_type = BUS_TYPE_MAPPING["SMV"]["type"]
+            bus.bus_color = BUS_TYPE_MAPPING["SMV"]["color"]
 
     # Filter out "teli" type buses
-    teli_buses = [bus for bus in busses if "Teli" in bus.bus_type]
+    #teli_buses = [bus for bus in busses if "Teli" in bus.bus_type]
 
     # Sort "teli" buses by departure time in descending order
-    teli_buses_sorted = sorted(teli_buses, key=lambda x: (datetime.combine(datetime.min, x.arrival_time) - datetime.combine(datetime.min, x.departure_time)).total_seconds(), reverse=True)
+    #teli_buses_sorted = sorted(teli_buses, key=lambda x: (datetime.combine(datetime.min, x.arrival_time) - datetime.combine(datetime.min, x.departure_time)).total_seconds(), reverse=True)
 
     # Keep only the five "teli" buses with the latest departure times
-    teli_buses_to_keep = [
-        bus for bus in teli_buses_sorted 
-        if bus.departure_time <= datetime.strptime("08:00", "%H:%M").time()
-    ]
-    teli_buses_to_keep = teli_buses_to_keep[:5]
+    #teli_buses_to_keep = [
+    #    bus for bus in teli_buses_sorted 
+    #    if bus.departure_time <= datetime.strptime("08:00", "%H:%M").time()
+    #]
+    #teli_buses_to_keep = teli_buses_to_keep[:5]
 
-    print(teli_buses_to_keep)
+    #print(teli_buses_to_keep)
 
     # Create the bus_type_list with only the required buses
     bus_type_list = busses
@@ -111,9 +120,9 @@ if __name__ == "__main__":
     #for bus in teli_buses_remaining:
     #    print(bus)
     
-
-    if len(bus_type_list) > 72 + 17:
-        diff = len(bus_type_list) - 72 - 17
+    
+    if len(bus_type_list) > 72 + 17 + 4:
+        diff = len(bus_type_list) - 72 - 17 - 4
         dmv_count = 0
         for i in range(len(bus_type_list) - 1, -1, -1):
             if bus_type_list[i].bus_id[:3] == "DMV":
@@ -121,6 +130,8 @@ if __name__ == "__main__":
                 dmv_count += 1
             if dmv_count == diff:
                 break
+     
+    
     print("Size of bus_type_list:")
     print(len(bus_type_list))
 
@@ -144,22 +155,27 @@ if __name__ == "__main__":
     max_deviation = 5
     arrivals = []
     
-    while bus_type_list_increasing_arrival:
-        bus = bus_type_list_increasing_arrival.pop(0)
+    for bus in bus_type_list_increasing_arrival:
         arrivals.append(bus.bus_id[:3])
     
     departures = []
-    while bus_type_list_increasing_departure:
-        bus = bus_type_list_increasing_departure.pop(0)
+    for bus in bus_type_list_increasing_departure:
         departures.append(bus.bus_id[:3])
 
     print(f"\nArrivals: {arrivals}")
     print(f"\nDepartures: {departures}")
 
+    print(f"\nArrivals: {len(arrivals)}")
+    print(f"\nDepartures: {len(departures)}")
+
     # Call the function with parameters
     # X on vektori, jonka arvot kertovat patternien määrän kullekin patternin indexille.
     #  Esim: [1, 0, 3, 0] -> 1 kpl pattern 1, 0 kpl pattern 2, 3 kpl pattern 3, 0 kpl pattern 4
+
     X, Y, Z = Main.optimize_model_k_approach(l, v, max_deviation, arrivals, departures)
+    #l_pela = 6
+    #v_pela = 6
+    #X, Y, Z = Main.optimize_model_k_approach_PELA(l_pela, v_pela, max_deviation, arrivals, departures)
 
     bus_id_to_find = "SMV501"
     for bus in busses:
