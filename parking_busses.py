@@ -17,7 +17,7 @@ class Lane:
         self.outside_parking = self.length == 1 # Boolean
     
     def __str__(self):
-        print(f"Lane {self.name}, having pattern {self.blocks}")
+        print(f"Lane with pattern id {self.name + 1}, having pattern {self.blocks}")
         return
 
 
@@ -66,7 +66,7 @@ def parking(lanes, arrivals, Y, P):
 
         for i in indexes:
             for p in Pt:
-                for j in range(0, int(Y[P.index(p)][i]) - int(Y[P.index(p)][i - 1]) + 1):
+                for j in range(0, round(Y[P.index(p)][i - 1]) - round(Y[P.index(p)][i - 2])):
                     for k, lane in enumerate(lanes_copy):
                         if lane.blocks == p:
                             lanes_copy.pop(k)
@@ -177,12 +177,11 @@ def dispatching(lanes, mapping, departures, Z, P):
 
         for i in indexes:
             for p in Pt:
-                for j in range(0, int(Z[P.index(p)][i]) - int(Z[P.index(p)][i - 1]) + 1):
+                for j in range(0, round(Z[P.index(p)][i-1]) - round(Z[P.index(p)][i - 2])):
                     for k, lane in enumerate(lanes_copy):
                         if lane.blocks == p:
                             lanes_copy.pop(k)
                             L[t].append(lane)
-        L[t] = list(reversed(L[t])) # Now reverse the two block patterns with exit type t? What is going on? This seems to work.
 
     # Rest should be one block lanes
     for lane in lanes_copy:
@@ -240,7 +239,6 @@ def dispatching(lanes, mapping, departures, Z, P):
             
     return departuresWithID
 
-
 def adjustDeparture(busses, day):
     """
         busses: List of bus objects
@@ -252,13 +250,12 @@ def adjustDeparture(busses, day):
     indexOfDay = weekDays.index(day)
 
     for bus in busses:
-        arrivalDepartureDict = {
-            0: bus.departure_time_TITO,
-            1: bus.departure_time_PE,
-            2: bus.departure_time_LA,
-            3: bus.departure_time_SU,
-            4: bus.departure_time_MA
-        }
+        arrivalDepartureDict = [bus.departure_time_TITO, 
+                                bus.departure_time_PE, 
+                                bus.departure_time_LA, 
+                                bus.departure_time_SU, 
+                                bus.departure_time_MA
+                               ]
 
         if arrivalDepartureDict[indexOfDay] is None:
             idx = indexOfDay + 1
@@ -270,7 +267,7 @@ def adjustDeparture(busses, day):
             while True:
                 curr = nones[idx % 5]
                 if prev == 1 and curr == 0:
-                    j = idx
+                    j = idx #
                     break
 
                 prev = curr
@@ -279,23 +276,19 @@ def adjustDeparture(busses, day):
                     break
 
             if j != -1:
-                if indexOfDay == 0:
-                    bus.departure_time_PE = arrivalDepartureDict[j % 5] + (j - indexOfDay) * 24.0
-                elif indexOfDay == 1:
-                    bus.departure_time_LA = arrivalDepartureDict[j % 5] + (j - indexOfDay) * 24.0
-                elif indexOfDay == 2:
-                    bus.departure_time_SU = arrivalDepartureDict[j % 5] + (j - indexOfDay) * 24.0
-                elif indexOfDay == 3:
-                    bus.departure_time_MA = arrivalDepartureDict[j % 5] + (j - indexOfDay) * 24.0
-                elif indexOfDay == 4:
+                if indexOfDay == 0 and bus.arrival_time_MAKE is not None:
                     bus.departure_time_TITO = arrivalDepartureDict[j % 5] + (j - indexOfDay) * 24.0
+                elif indexOfDay == 1 and bus.arrival_time_TO is not None:
+                    bus.departure_time_PE = arrivalDepartureDict[j % 5] + (j - indexOfDay) * 24.0
+                elif indexOfDay == 2 and bus.arrival_time_PE is not None:
+                    bus.departure_time_LA = arrivalDepartureDict[j % 5] + (j - indexOfDay) * 24.0
+                elif indexOfDay == 3 and bus.arrival_time_LA is not None:
+                    bus.departure_time_SU = arrivalDepartureDict[j % 5] + (j - indexOfDay) * 24.0
+                elif indexOfDay == 4 and bus.arrival_time_SU is not None:
+                    bus.departure_time_MA = arrivalDepartureDict[j % 5] + (j - indexOfDay) * 24.0
 
             else:
                 print("Exception :D")
         else:
             continue
-    return
-
-        
-        
-        
+    return busses
