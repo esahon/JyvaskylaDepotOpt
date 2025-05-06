@@ -369,8 +369,18 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     println("Variable X (values represent the number of lanes partitioned according to pattern *index number of X*):")
     println(JuMP.value.(X))
     println("")
-    println("Variable Y (the number of lanes partitioned according to pattern p ∈ P2 whose exit block is full when the arrival in position i ∈ I has just been parked):")
-    println(JuMP.value.(Y))
+
+    #println("Variable Y (the number of lanes partitioned according to pattern p ∈ P2 whose exit block is full when the arrival in position i ∈ I has just been parked):")
+    #println(JuMP.value.(Y))
+
+    #println("Variable Z (detailed view with indices):")
+    #for i in 1:size(Z, 1)
+    #    print("Pattern $i: ")
+    #    for j in 1:size(Z, 2)
+    #        print("$j: $(JuMP.value(Z[i, j])), ")
+    #    end
+    #    println("")
+    #end
 
     println("")
     println("Total buses assigned across all patterns:")

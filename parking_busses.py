@@ -17,7 +17,7 @@ class Lane:
         self.outside_parking = self.length == 1 # Boolean
     
     def __str__(self):
-        print(f"Lane {self.name}, having pattern {self.blocks}")
+        print(f"Lane with pattern id {self.name + 1}, having pattern {self.blocks}")
         return
 
 
@@ -66,11 +66,12 @@ def parking(lanes, arrivals, Y, P):
 
         for i in indexes:
             for p in Pt:
-                for j in range(0, int(Y[P.index(p)][i]) - int(Y[P.index(p)][i - 1]) + 1):
+                for j in range(0, round(Y[P.index(p)][i - 1]) - round(Y[P.index(p)][i - 2])):
                     for k, lane in enumerate(lanes_copy):
                         if lane.blocks == p:
                             lanes_copy.pop(k)
                             L[t].append(lane)
+
         L[t] = list(reversed(L[t])) # Now reverse the two block patterns with exit type t? What is going on? This seems to work.
 
     # Rest should be one block lanes
@@ -177,12 +178,11 @@ def dispatching(lanes, mapping, departures, Z, P):
 
         for i in indexes:
             for p in Pt:
-                for j in range(0, int(Z[P.index(p)][i]) - int(Z[P.index(p)][i - 1]) + 1):
+                for j in range(0, round(Z[P.index(p)][i-1]) - round(Z[P.index(p)][i - 2])):
                     for k, lane in enumerate(lanes_copy):
                         if lane.blocks == p:
                             lanes_copy.pop(k)
                             L[t].append(lane)
-        L[t] = list(reversed(L[t])) # Now reverse the two block patterns with exit type t? What is going on? This seems to work.
 
     # Rest should be one block lanes
     for lane in lanes_copy:
