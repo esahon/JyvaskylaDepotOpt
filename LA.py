@@ -8,7 +8,7 @@ from parking_busses import Lane, parking, dispatching, adjustDeparture
 
 # Load Julia script
 #Main.include("k_position_approach.jl")
-Main.include("k_position_approach_PELA.jl") # Load the correct Julia script
+Main.include("k_position_approach_LASU.jl") # Load the correct Julia script
 
 class Bus:
     def __init__(self, bus_id, bus_fuel, bus_type, bus_color):
@@ -288,53 +288,43 @@ if __name__ == "__main__":
     print("Number of busses removed: ", count)
 
     # Remove buses with None values in any of the arrival or departure times
-    busses_arrivals_PE = []
+    busses_arrivals_LA = []
     for bus in busses:
-        if bus.arrival_time_PE is not None:
-            busses_arrivals_PE.append(bus)
+        if bus.arrival_time_LA is not None:
+            busses_arrivals_LA.append(bus)
         else:
             print(f"Removed bus: {bus} having no arrival time on Friday")
 
-    busses_departures_LA = []
+    busses_departures_SU = []
     for bus in busses:
-        if bus.departure_time_LA is not None:
-            busses_departures_LA.append(bus)
+        if bus.departure_time_SU is not None:
+            busses_departures_SU.append(bus)
         else:
             print(f"Removed bus: {bus} having no departure time on Saturday")
 
-    # Find the SMV or STS buses that are parked behind the DMS or DMV buses (H, I, J columns). 
-    #arrival_ids_PE = []
-    #for bus in busses_arrivals_PE:
-    #    arrival_ids_PE.append(bus.bus_id)
+    
+    arrivals_PE = copy.copy(sorted(busses_arrivals_LA, key=lambda x: x.arrival_time_PE))
+    departures_LA = copy.copy(sorted(busses_departures_SU, key=lambda x: x.departure_time_LA))
 
-    #departures_to_remove = [bus for bus in busses_departures_LA if bus.bus_id not in arrival_ids_PE][:1]
-    #for bus in departures_to_remove:
-    #    print(f"Bus to remove: {bus}")
-    #    busses_departures_LA.remove(bus)
 
-    # Lauantaita varten sarakkeisiin H, I, J parkkeeratut diesel bussit asetetaan lähtemään keinotekoisesti todella aikaisin.
-    # Tämä mahdollistaa niiden perään parkkeerattujen sähköbussien liikennöinnin viikonloppuna.
-    # Fyysisesti nämä siis ajetaan ulos hallista aamulla ja ajetaan takaisin SAMOILLE paikoille, kun halli on tyhjentynyt.
-    # DMV401, DMV402, DMV403, DMV404, DMV405, DMV406, DMS101
-    count = 1
-    dmv_busses = []
-    for bus in busses_departures_LA:
-        if bus.bus_id[:6] in ["DMV401", "DMV402", "DMV403", "DMV404", "DMV405", "DMV406", "DMV407"]:
-            dmv_busses.append(bus)
-    dmv_busses = sorted(dmv_busses, key=lambda x: x.departure_time_MA)
+    telit_su = 4
+    su_liikenteessa = 45
+    sisapaikat = 36
+    sisa_telit = 5
+    telis_to_transform = su_liikenteessa - sisapaikat + sisa_telit - telit_su # 10 2-aks sähkölinjaa ajetaankin sähköteleillä (1 sisältä, 9 ulkoota)
 
-    for bus in busses_departures_LA:
-        if bus.bus_id[:6] in ["DMV401", "DMV402", "DMV403", "DMV404", "DMV405", "DMV406", "DMV407"]:
-            bus.departure_time_LA = (dmv_busses.index(bus) + 1) * 0.01
-            print(bus)
+    print("Telejä tarvitaan lisää: ", telis_to_transform)
+    
+    # Korvaa yhden SMV:n STV telillä, tämä todennäköisesti lähtee BCDEF ekalta paikalta 
+    for bus in range(len(departures_LA) - 1, -1, -1):
+        if bus.bus_id[:3] == "SMV":
+            bus.bus_id.replace("SMV", "STV", 1)
+            bus.bus_fuel = BUS_TYPE_MAPPING["STV"]["fuel"]
+            bus.bus_type = BUS_TYPE_MAPPING["STV"]["type"]
+            bus.bus_color = BUS_TYPE_MAPPING["STV"]["color"]
+            break
 
-    #print("busses_arrivals_TO")
-    #print(busses_arrivals_PE)
-    #print("busses_departures_PE")
-    #print(busses_departures_LA)
-        
-    arrivals_PE = copy.copy(sorted(busses_arrivals_PE, key=lambda x: x.arrival_time_PE))
-    departures_LA = copy.copy(sorted(busses_departures_LA, key=lambda x: x.departure_time_LA))
+    
 
     arrivals_list_TO = []
     for_parking = []

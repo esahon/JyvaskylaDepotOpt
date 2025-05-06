@@ -3,7 +3,7 @@ from datetime import datetime
 import copy
 from julia import Main
 from collections import Counter
-from parking_busses import Lane, parking, dispatching
+from parking_busses import Lane, parking, dispatching, adjustDeparture
 
 
 # Load Julia script
@@ -212,9 +212,9 @@ def all_arrivals_departures(file_paths):
     # Print the bus objects for debugging
     #for bus in busses:
     #    print(bus)
-    for bus in busses:
-        if bus.bus_id == "SVV703":
-            print(bus)  
+    #for bus in busses:
+    #    if bus.bus_id == "SVV703":
+    #        print(bus)  
 
     print("Nro of buses:")
     print(len(busses))
@@ -271,6 +271,12 @@ if __name__ == "__main__":
 
     # PITÄÄ LISÄTÄ None aikoihin +24.00 per None arrival
 
+    #adjusted_departure_times = adjustDeparture(busses, "make")
+    #for bus in busses:
+    #    print(bus.__repr__)
+
+
+
     # Remove buses with None values in any of the arrival or departure times
     busses = [
         bus for bus in busses
@@ -310,11 +316,11 @@ if __name__ == "__main__":
     print(f"\nArrivals: {len(arrivals_list_MAKE)}")
     print(f"\nDepartures: {len(departures_list_TITO)}")
 
-    print(arrivals_list_MAKE[:4])
-    print("Nro of buses in arrivals_list_MAKE:")
-    print(len(arrivals_list_MAKE))
-    print("Nro of buses in departures_list_TITO:")
-    print(len(departures_list_TITO))
+    #print(arrivals_list_MAKE[:4])
+    #print("Nro of buses in arrivals_list_MAKE:")
+    #print(len(arrivals_list_MAKE))
+    #print("Nro of buses in departures_list_TITO:")
+    #print(len(departures_list_TITO))
 
     l = 12  # Number of lanes
     v = 6  # Total number of bus slots

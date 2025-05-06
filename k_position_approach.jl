@@ -101,10 +101,10 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     #departures = ["B", "A", "A", "C", "B", "A"]
     #arrivals = ["A", "A", "A", "B", "B", "A", "B", "C", "C", "C"]
     #departures = ["A", "A", "A", "B", "B", "A", "B", "C", "C", "C"]
-    println("")
-    println("Arrivals in order: $arrivals")
-    println("Departures in order: $departures")
-    println("")
+    #println("")
+    #println("Arrivals in order: $arrivals")
+    #println("Departures in order: $departures")
+    #println("")
 
     #compute_max_min_arrivals(arrivals, "B", 1, "max")
 
@@ -217,10 +217,10 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     P, pattern_types, exit_block, entry_block = generate_patterns(v, bus_types)
 
     # Print patterns with their types
-    println("Patterns:")
-    for i in 1:length(P)
-        println("Pattern $i: ", P[i], " - Type: ", pattern_types[i], " - Exit block: ", exit_block[i], " - Entry block: ", entry_block[i])
-    end
+    #println("Patterns:")
+    #for i in 1:length(P)
+    #    println("Pattern $i: ", P[i], " - Type: ", pattern_types[i], " - Exit block: ", exit_block[i], " - Entry block: ", entry_block[i])
+    #end
 
 
     # THE K-POSITION MODEL
@@ -365,12 +365,12 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
 
     optimize!(model)
 
-    println("")
-    println("Variable X (values represent the number of lanes partitioned according to pattern *index number of X*):")
-    println(JuMP.value.(X))
-    println("")
-    println("Variable Y (the number of lanes partitioned according to pattern p ∈ P2 whose exit block is full when the arrival in position i ∈ I has just been parked):")
-    println(JuMP.value.(Y))
+    #println("")
+    #println("Variable X (values represent the number of lanes partitioned according to pattern *index number of X*):")
+    #println(JuMP.value.(X))
+    #println("")
+    #println("Variable Y (the number of lanes partitioned according to pattern p ∈ P2 whose exit block is full when the arrival in position i ∈ I has just been parked):")
+    #println(JuMP.value.(Y))
 
     println("")
     println("Total buses assigned across all patterns:")
