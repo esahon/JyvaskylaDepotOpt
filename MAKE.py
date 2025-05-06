@@ -284,6 +284,13 @@ if __name__ == "__main__":
             bus.arrival_time_MAKE, bus.departure_time_TITO
         )
     ]
+    count = 0
+    for bus in busses:
+        if bus.bus_id in ["DMV426", "DMV427", "DMV428", "DMV429"]:
+            busses.remove(bus)
+            #print(bus)
+            count += 1
+    print("Number of busses removed: ", count)
 
     arrivals_MAKE = copy.copy(sorted(busses, key=lambda x: x.arrival_time_MAKE))
     departures_TITO = copy.copy(sorted(busses, key=lambda x: x.departure_time_TITO))

@@ -316,7 +316,7 @@ if __name__ == "__main__":
     print("Telejä tarvitaan lisää: ", telis_to_transform)
     
     # Korvaa yhden SMV:n STV telillä, tämä todennäköisesti lähtee BCDEF ekalta paikalta 
-    for bus in range(len(departures_LA) - 1, -1, -1):
+    for bus in reversed(departures_LA):
         if bus.bus_id[:3] == "SMV":
             bus.bus_id.replace("SMV", "STV", 1)
             bus.bus_fuel = BUS_TYPE_MAPPING["STV"]["fuel"]

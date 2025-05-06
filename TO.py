@@ -273,24 +273,20 @@ if __name__ == "__main__":
     #adjusted_departure_times = adjustDeparture(busses, "to")
 
     # Remove buses with None values in any of the arrival or departure times
-    busses_arrivals_TO = []
+    busses = [
+        bus for bus in busses
+        if None not in (
+            bus.arrival_time_MAKE, bus.departure_time_TITO
+        )
+    ]
+
+    count = 0
     for bus in busses:
-        if bus.arrival_time_TO is not None:
-            busses_arrivals_TO.append(bus)
-
-    busses_departures_PE = []
-    for bus in busses:
-        if bus.departure_time_PE is not None:
-            busses_departures_PE.append(bus)
-
-    # Remove exactly two buses from busses_departures_PE that are not in busses_arrivals_TO
-    arrival_ids_TO = []
-    for bus in busses_arrivals_TO:
-        arrival_ids_TO.append(bus.bus_id)
-
-    departures_to_remove = [bus for bus in busses_departures_PE if bus.bus_id not in arrival_ids_TO][:2]
-    for bus in departures_to_remove:
-        busses_departures_PE.remove(bus)
+        if bus.bus_id in ["DMV426", "DMV427", "DMV428", "DMV429"]:
+            busses.remove(bus)
+            #print(bus)
+            count += 1
+    print("Number of busses removed: ", count)
 
 
     #print("busses_arrivals_TO")
@@ -298,8 +294,8 @@ if __name__ == "__main__":
     #print("busses_departures_PE")
     #print(busses_departures_PE)
 
-    arrivals_TO = copy.copy(sorted(busses_arrivals_TO, key=lambda x: x.arrival_time_TO))
-    departures_PE = copy.copy(sorted(busses_departures_PE, key=lambda x: x.departure_time_PE))
+    arrivals_TO = copy.copy(sorted(busses, key=lambda x: x.arrival_time_TO))
+    departures_PE = copy.copy(sorted(busses, key=lambda x: x.departure_time_PE))
 
     arrivals_list_TO = []
     for_parking = []
