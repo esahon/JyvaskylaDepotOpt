@@ -351,9 +351,9 @@ if __name__ == "__main__":
                 lanes_list.append(obj)
 
 
-    buses_mapped = parking(lanes_list, for_parking, Y, P)
-    lanes = dispatching(lanes_list, buses_mapped, for_dispatching, Z, P)
+    buses_mapped, lanes_parking = parking(lanes_list, for_parking, Y, P)
+    lanes_dispatching = dispatching(lanes_list, buses_mapped, for_dispatching, Z, P)
 
 
-    fill_departures_to_excel(file_path1, lanes)
-    fill_arrivals_to_excel(file_path1, buses_mapped)
+    fill_departures_to_excel(file_path1, lanes_dispatching)
+    fill_arrivals_to_excel(file_path1, lanes_parking)

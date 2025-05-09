@@ -374,6 +374,6 @@ if __name__ == "__main__":
                 lanes_list.append(obj)
 
 
-    buses_mapped = parking(lanes_list, for_parking, Y, P)
-    lanes = dispatching(lanes_list, buses_mapped, for_dispatching, Z, P)
+    buses_mapped, lanes_parking = parking(lanes_list, for_parking, Y, P)
+    lanes_dispatching = dispatching(lanes_list, buses_mapped, for_dispatching, Z, P)
     
