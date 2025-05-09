@@ -131,12 +131,12 @@ def parking(lanes, arrivals, Y, P):
     for lane in lanes:
         print(f"Lane {lane.name}: exitBlock = {mapping[lane]['exitBlock']}, entryBlock = {mapping[lane]['entryBlock']}")
         
-        list = []
+        listOfBusses = []
         for bus in mapping[lane]['exitBlock']:
-            list.append(bus)
+            listOfBusses.append(bus)
         for bus in mapping[lane]['entryBlock']:
-            list.append(bus)
-        parkingWithID[lane] = list
+            listOfBusses.append(bus)
+        parkingWithID[lane] = listOfBusses
 
     # Toka palautettava parametri on kompaktimpi muoto datasta, joka helpompi käsitellä jälkeenpäin
     # Pidetään mapping sittenkin, koska en jaksa muokata dispatchingia.
