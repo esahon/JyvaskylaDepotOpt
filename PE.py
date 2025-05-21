@@ -3,11 +3,11 @@ from datetime import datetime
 import copy
 from julia import Main
 from collections import Counter
-from parking_busses import Lane, parking
+from parking_busses import Lane, parking, dispatching, adjustDeparture
 
 
 # Load Julia script
-Main.include("k_position_approach.jl")
+#Main.include("k_position_approach.jl")
 Main.include("k_position_approach_PELA.jl") # Load the correct Julia script
 
 class Bus:
@@ -50,7 +50,7 @@ class Bus:
             f"  Departure_SU={self.departure_time_SU},\n\n"
             f"  Arrival_SU={self.arrival_time_SU}\n"
             f"  Departure_MA={self.departure_time_MA},\n"
-            f")"
+            f"  Data type of departure={type(self.departure_time_LA)})"
         )
         
 # Bussityyppien määrittely (alkuliitteet ilman XXX)
@@ -212,9 +212,9 @@ def all_arrivals_departures(file_paths):
     # Print the bus objects for debugging
     #for bus in busses:
     #    print(bus)
-    for bus in busses:
-        if bus.bus_id == "SVV703":
-            print(bus)  
+    #for bus in busses:
+    #    if bus.bus_id == "SVV703":
+    #        print(bus)  
 
     print("Nro of buses:")
     print(len(busses))
@@ -259,6 +259,8 @@ if __name__ == "__main__":
     #print(busses)
 
     # Convert "SVV" buses to "SMV" type
+    koulubussit = [] # Näitä ei ole mallissa mukana ollenkaan, tulee tehdä käsin ja parkkeerata ulos
+    count = 0
     for bus in busses:
         if bus.bus_id[:3] == "SVV":
             bus.bus_id = bus.bus_id.replace("SVV", "SMV", 1)
@@ -266,79 +268,101 @@ if __name__ == "__main__":
             bus.bus_type = BUS_TYPE_MAPPING["SMV"]["type"]
             bus.bus_color = BUS_TYPE_MAPPING["SMV"]["color"]
 
+        elif bus.bus_id[:6] in ["DMV426", "DMV427", "DMV428", "DMV429"]:
+            koulubussit.append(bus)
+            busses.remove(bus)
+            count += 1
+
     # Adjust None arrival times
     #adjust_none_arrivals(busses)
 
     # PITÄÄ LISÄTÄ None aikoihin +24.00 per None arrival
+    busses = adjustDeparture(busses, "pe")
+    #for bus in adjusted_departure_times:
+    #    print(bus.__repr__)
+    for bus in busses:
+        if bus.bus_id in ["DMV426", "DMV427", "DMV428", "DMV429"]:
+            busses.remove(bus)
+            #print(bus)
+            count += 1
+    print("Number of busses removed: ", count)
 
     # Remove buses with None values in any of the arrival or departure times
     busses_arrivals_PE = []
     for bus in busses:
         if bus.arrival_time_PE is not None:
             busses_arrivals_PE.append(bus)
+        else:
+            print(f"Removed bus: {bus} having no arrival time on Friday")
 
     busses_departures_LA = []
     for bus in busses:
         if bus.departure_time_LA is not None:
             busses_departures_LA.append(bus)
+        else:
+            print(f"Removed bus: {bus} having no departure time on Saturday")
 
     # Find the SMV or STS buses that are parked behind the DMS or DMV buses (H, I, J columns). 
-    arrival_ids_TO = []
-    for bus in busses_arrivals_TO:
-        arrival_ids_TO.append(bus.bus_id)
+    #arrival_ids_PE = []
+    #for bus in busses_arrivals_PE:
+    #    arrival_ids_PE.append(bus.bus_id)
 
-    departures_to_remove = [bus for bus in busses_departures_PE if bus.bus_id not in arrival_ids_TO][:2]
-    for bus in departures_to_remove:
-        busses_departures_PE.remove(bus)
+    #departures_to_remove = [bus for bus in busses_departures_LA if bus.bus_id not in arrival_ids_PE][:1]
+    #for bus in departures_to_remove:
+    #    print(f"Bus to remove: {bus}")
+    #    busses_departures_LA.remove(bus)
 
+    # Lauantaita varten sarakkeisiin H, I, J parkkeeratut diesel bussit asetetaan lähtemään keinotekoisesti todella aikaisin.
+    # Tämä mahdollistaa niiden perään parkkeerattujen sähköbussien liikennöinnin viikonloppuna.
+    # Fyysisesti nämä siis ajetaan ulos hallista aamulla ja ajetaan takaisin SAMOILLE paikoille, kun halli on tyhjentynyt.
+    # DMV401, DMV402, DMV403, DMV404, DMV405, DMV406, DMS101
+    count = 1
+    dmv_busses = []
+    for bus in busses_departures_LA:
+        if bus.bus_id[:6] in ["DMV401", "DMV402", "DMV403", "DMV404", "DMV405", "DMV406", "DMV407"]:
+            dmv_busses.append(bus)
+    dmv_busses = sorted(dmv_busses, key=lambda x: x.departure_time_MA)
 
-    print("busses_arrivals_TO")
-    print(busses_arrivals_TO)
-    print("busses_departures_PE")
-    print(busses_departures_PE)
+    for bus in busses_departures_LA:
+        if bus.bus_id[:6] in ["DMV401", "DMV402", "DMV403", "DMV404", "DMV405", "DMV406", "DMV407"]:
+            bus.departure_time_LA = (dmv_busses.index(bus) + 1) * 0.01
+            print(bus)
 
+    #print("busses_arrivals_TO")
+    #print(busses_arrivals_PE)
+    #print("busses_departures_PE")
+    #print(busses_departures_LA)
         
-
-    #arrivals_MAKE = copy.copy(sorted(busses, key=lambda x: x.arrival_time_MAKE))
-    #departures_TITO = copy.copy(sorted(busses, key=lambda x: x.departure_time_TITO))
-
-    arrivals_TO = copy.copy(sorted(busses_arrivals_TO, key=lambda x: x.arrival_time_TO))
-    departures_PE = copy.copy(sorted(busses_departures_PE, key=lambda x: x.departure_time_PE))
-
-    #arrivals_PE = copy.copy(sorted(busses, key=lambda x: x.arrival_time_PE))
-    #departures_LA = copy.copy(sorted(busses, key=lambda x: x.departure_time_LA))
-
-    #arrivals_LA = copy.copy(sorted(busses, key=lambda x: x.arrival_time_LA))
-    #departures_SU = copy.copy(sorted(busses, key=lambda x: x.departure_time_SU))
-
-    #arrivals_SU = copy.copy(sorted(busses, key=lambda x: x.arrival_time_SU))
-    #arrivals_MA = copy.copy(sorted(busses, key=lambda x: x.departure_time_MA))
-
+    arrivals_PE = copy.copy(sorted(busses_arrivals_PE, key=lambda x: x.arrival_time_PE))
+    departures_LA = copy.copy(sorted(busses_departures_LA, key=lambda x: x.departure_time_LA))
 
     arrivals_list_TO = []
     for_parking = []
-    for bus in arrivals_TO:
+    for bus in arrivals_PE:
         for_parking.append(bus.bus_id)
         arrivals_list_TO.append(bus.bus_id[:3])
     
     departures_list_PE = []
-    for bus in departures_PE:
+    for_dispatching = []
+    for bus in departures_LA:
+        for_dispatching.append(bus.bus_id)
         departures_list_PE.append(bus.bus_id[:3])
 
     print(f"\nArrivals: {len(arrivals_list_TO)}")
     print(f"\nDepartures: {len(departures_list_PE)}")
 
-    print(arrivals_list_TO[:4])
-    print("Nro of buses in arrivals_list_MAKE:")
-    print(len(arrivals_list_TO))
-    print("Nro of busess in departures_list_TITO:")
-    print(len(departures_list_PE))
+    #print(arrivals_list_TO[:4])
+    #print("Nro of buses in arrivals_list_MAKE:")
+    #print(len(arrivals_list_TO))
+    #print("Nro of busess in departures_list_TITO:")
+    #print(len(departures_list_PE))
 
     l = 12  # Number of lanes
     v = 6  # Total number of bus slots
     max_deviation = 5
 
-    X, Y, Z , P = Main.optimize_model_k_approach(l, v, max_deviation, arrivals_list_TO, departures_list_PE)
+    
+    X, Y, Z , P = Main.optimize_model_k_approach_PELA(l, v, max_deviation, arrivals_list_TO, departures_list_PE)
 
 
     lanes_list = []
@@ -350,5 +374,6 @@ if __name__ == "__main__":
                 lanes_list.append(obj)
 
 
-    buses_mapped = parking(lanes_list, for_parking)
-    #print(buses_mapped)
+    buses_mapped, lanes_parking = parking(lanes_list, for_parking, Y, P)
+    lanes_dispatching = dispatching(lanes_list, buses_mapped, for_dispatching, Z, P)
+    

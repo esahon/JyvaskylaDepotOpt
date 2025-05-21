@@ -3,7 +3,7 @@ from datetime import datetime
 import copy
 from julia import Main
 from collections import Counter
-from parking_busses import Lane, parking, dispatching
+from parking_busses import Lane, parking, dispatching, adjustDeparture
 
 
 # Load Julia script
@@ -212,9 +212,9 @@ def all_arrivals_departures(file_paths):
     # Print the bus objects for debugging
     #for bus in busses:
     #    print(bus)
-    for bus in busses:
-        if bus.bus_id == "SVV703":
-            print(bus)  
+    #for bus in busses:
+    #    if bus.bus_id == "SVV703":
+    #        print(bus)  
 
     print("Nro of buses:")
     print(len(busses))
@@ -254,7 +254,7 @@ if __name__ == "__main__":
     file_path4 = "data/KAJSYK24_SU.xlsx"
     file_path5 = "data/KAJSYK24_MA-TO.xlsx"
     file_paths = [file_path1, file_path2, file_path3, file_path4, file_path5]
-    print(file_paths)
+    #print(file_paths)
     busses = all_arrivals_departures(file_paths)
     #print(busses)
 
@@ -270,50 +270,32 @@ if __name__ == "__main__":
     #adjust_none_arrivals(busses)
 
     # PITÄÄ LISÄTÄ None aikoihin +24.00 per None arrival
+    #adjusted_departure_times = adjustDeparture(busses, "to")
 
     # Remove buses with None values in any of the arrival or departure times
-    busses_arrivals_TO = []
+    busses = [
+        bus for bus in busses
+        if None not in (
+            bus.arrival_time_MAKE, bus.departure_time_TITO
+        )
+    ]
+
+    count = 0
     for bus in busses:
-        if bus.arrival_time_TO is not None:
-            busses_arrivals_TO.append(bus)
-
-    busses_departures_PE = []
-    for bus in busses:
-        if bus.departure_time_PE is not None:
-            busses_departures_PE.append(bus)
-
-    # Remove exactly two buses from busses_departures_PE that are not in busses_arrivals_TO
-    arrival_ids_TO = []
-    for bus in busses_arrivals_TO:
-        arrival_ids_TO.append(bus.bus_id)
-
-    departures_to_remove = [bus for bus in busses_departures_PE if bus.bus_id not in arrival_ids_TO][:2]
-    for bus in departures_to_remove:
-        busses_departures_PE.remove(bus)
+        if bus.bus_id in ["DMV426", "DMV427", "DMV428", "DMV429"]:
+            busses.remove(bus)
+            #print(bus)
+            count += 1
+    print("Number of busses removed: ", count)
 
 
-    print("busses_arrivals_TO")
-    print(busses_arrivals_TO)
-    print("busses_departures_PE")
-    print(busses_departures_PE)
+    #print("busses_arrivals_TO")
+    #print(busses_arrivals_TO)
+    #print("busses_departures_PE")
+    #print(busses_departures_PE)
 
-        
-
-    #arrivals_MAKE = copy.copy(sorted(busses, key=lambda x: x.arrival_time_MAKE))
-    #departures_TITO = copy.copy(sorted(busses, key=lambda x: x.departure_time_TITO))
-
-    arrivals_TO = copy.copy(sorted(busses_arrivals_TO, key=lambda x: x.arrival_time_TO))
-    departures_PE = copy.copy(sorted(busses_departures_PE, key=lambda x: x.departure_time_PE))
-
-    #arrivals_PE = copy.copy(sorted(busses, key=lambda x: x.arrival_time_PE))
-    #departures_LA = copy.copy(sorted(busses, key=lambda x: x.departure_time_LA))
-
-    #arrivals_LA = copy.copy(sorted(busses, key=lambda x: x.arrival_time_LA))
-    #departures_SU = copy.copy(sorted(busses, key=lambda x: x.departure_time_SU))
-
-    #arrivals_SU = copy.copy(sorted(busses, key=lambda x: x.arrival_time_SU))
-    #arrivals_MA = copy.copy(sorted(busses, key=lambda x: x.departure_time_MA))
-
+    arrivals_TO = copy.copy(sorted(busses, key=lambda x: x.arrival_time_TO))
+    departures_PE = copy.copy(sorted(busses, key=lambda x: x.departure_time_PE))
 
     arrivals_list_TO = []
     for_parking = []
@@ -330,11 +312,11 @@ if __name__ == "__main__":
     print(f"\nArrivals: {len(arrivals_list_TO)}")
     print(f"\nDepartures: {len(departures_list_PE)}")
 
-    print(arrivals_list_TO[:4])
-    print("Nro of buses in arrivals_list_MAKE:")
-    print(len(arrivals_list_TO))
-    print("Nro of busess in departures_list_TITO:")
-    print(len(departures_list_PE))
+    #print(arrivals_list_TO[:4])
+    #print("Nro of buses in arrivals_list_MAKE:")
+    #print(len(arrivals_list_TO))
+    #print("Nro of busess in departures_list_TITO:")
+    #print(len(departures_list_PE))
 
     l = 12  # Number of lanes
     v = 6  # Total number of bus slots
@@ -356,5 +338,5 @@ if __name__ == "__main__":
                 lanes_list.append(obj)
 
 
-    buses_mapped = parking(lanes_list, for_parking, Y, P)
-    lanes = dispatching(lanes_list, buses_mapped, for_dispatching, Z, P)
+    buses_mapped, lanes_parking = parking(lanes_list, for_parking, Y, P)
+    lanes_dispatching = dispatching(lanes_list, buses_mapped, for_dispatching, Z, P)

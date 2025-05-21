@@ -101,10 +101,10 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     #departures = ["B", "A", "A", "C", "B", "A"]
     #arrivals = ["A", "A", "A", "B", "B", "A", "B", "C", "C", "C"]
     #departures = ["A", "A", "A", "B", "B", "A", "B", "C", "C", "C"]
-    println("")
-    println("Arrivals in order: $arrivals")
-    println("Departures in order: $departures")
-    println("")
+    #println("")
+    #println("Arrivals in order: $arrivals")
+    #println("Departures in order: $departures")
+    #println("")
 
     #compute_max_min_arrivals(arrivals, "B", 1, "max")
 
@@ -217,10 +217,10 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     P, pattern_types, exit_block, entry_block = generate_patterns(v, bus_types)
 
     # Print patterns with their types
-    println("Patterns:")
-    for i in 1:length(P)
-        println("Pattern $i: ", P[i], " - Type: ", pattern_types[i], " - Exit block: ", exit_block[i], " - Entry block: ", entry_block[i])
-    end
+    #println("Patterns:")
+    #for i in 1:length(P)
+    #    println("Pattern $i: ", P[i], " - Type: ", pattern_types[i], " - Exit block: ", exit_block[i], " - Entry block: ", entry_block[i])
+    #end
 
 
     # THE K-POSITION MODEL
@@ -237,7 +237,7 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     @objective(model, Min, sum(X[i] for i in 1:length(P) if pattern_types[i] == 2))
 
     # Constraint (4)): Total lanes must match l (should be v)
-    @constraint(model, total_lanes, sum(X[i] for i in 1:length(P)) == l + 17 + 4)
+    @constraint(model, total_lanes, sum(X[i] for i in 1:length(P)) == l + 17 + 3)
 
     # Constraint (5): Satisfy total bus requirements per type
     for t in bus_types
@@ -247,12 +247,37 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
     # Add a constraint to ensure at least one pattern includes an exit block with exactly one bus of type 'SMV' 
     
     # Select H, I and J
+    #@constraint(model, 
+    #sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) <= 3 + 0.001 
+    #)
+    #@constraint(model, 
+    #sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) >= 3 - 0.001
+    #)
+    # Select H, I and J
+    # Select H, I and J
     @constraint(model, 
-    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) <= 3 + 0.001 
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) == 1 || get(exit_block[i], "DMS", 0) == 1) && (get(entry_block[i], "SMV", 0) >= 1)) <= 1 + 0.001 
     )
     @constraint(model, 
-    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) >= 3 - 0.001
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) == 1 || get(exit_block[i], "DMS", 0) == 1) && (get(entry_block[i], "SMV", 0) >= 1)) >= 1 - 0.001
     )
+
+
+    @constraint(model, 
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) == 1 || get(exit_block[i], "DMS", 0) == 1) && (get(entry_block[i], "SMS", 0) >= 1)) <= 1 + 0.001 
+    )
+    @constraint(model, 
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) == 1 || get(exit_block[i], "DMS", 0) == 1) && (get(entry_block[i], "SMS", 0) >= 1)) >= 1 - 0.001
+    )
+    
+
+    @constraint(model, 
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) == 5 || get(exit_block[i], "DMS", 0) == 5) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) <= 1 + 0.001 
+    )
+    @constraint(model, 
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) == 5 || get(exit_block[i], "DMS", 0) == 5) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) >= 1 - 0.001
+    )
+
     # G, K and L
     @constraint(model, 
     sum(X[i] for i in 1:length(P) if ((get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "DMS", 0) >= 1 || get(entry_block[i], "DMV", 0) >= 1)) || get(exit_block[i], "DMS", 0)==6 || get(exit_block[i], "DMV", 0)==6) <= 3 + 0.001
@@ -365,12 +390,12 @@ function optimize_model_k_approach(l::Int, v::Int, max_deviation::Int, arrivals,
 
     optimize!(model)
 
-    println("")
-    println("Variable X (values represent the number of lanes partitioned according to pattern *index number of X*):")
-    println(JuMP.value.(X))
-    println("")
-    println("Variable Y (the number of lanes partitioned according to pattern p ∈ P2 whose exit block is full when the arrival in position i ∈ I has just been parked):")
-    println(JuMP.value.(Y))
+    #println("")
+    #println("Variable X (values represent the number of lanes partitioned according to pattern *index number of X*):")
+    #println(JuMP.value.(X))
+    #println("")
+    #println("Variable Y (the number of lanes partitioned according to pattern p ∈ P2 whose exit block is full when the arrival in position i ∈ I has just been parked):")
+    #println(JuMP.value.(Y))
 
     println("")
     println("Total buses assigned across all patterns:")

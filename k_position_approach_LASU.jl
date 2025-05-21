@@ -248,29 +248,11 @@ function optimize_model_k_approach_PELA(l::Int, v::Int, max_deviation::Int, arri
     
     # Select H, I and J
     @constraint(model, 
-    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) == 1 || get(exit_block[i], "DMS", 0) == 1) && (get(entry_block[i], "SMV", 0) >= 1)) <= 1 + 0.001 
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) <= 3 + 0.001 
     )
     @constraint(model, 
-    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) == 1 || get(exit_block[i], "DMS", 0) == 1) && (get(entry_block[i], "SMV", 0) >= 1)) >= 1 - 0.001
+    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) >= 3 - 0.001
     )
-
-
-    @constraint(model, 
-    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) == 1 || get(exit_block[i], "DMS", 0) == 1) && (get(entry_block[i], "SMS", 0) >= 1)) <= 1 + 0.001 
-    )
-    @constraint(model, 
-    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) == 1 || get(exit_block[i], "DMS", 0) == 1) && (get(entry_block[i], "SMS", 0) >= 1)) >= 1 - 0.001
-    )
-    
-
-    @constraint(model, 
-    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) == 5 || get(exit_block[i], "DMS", 0) == 5) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) <= 1 + 0.001 
-    )
-    @constraint(model, 
-    sum(X[i] for i in 1:length(P) if (get(exit_block[i], "DMV", 0) == 5 || get(exit_block[i], "DMS", 0) == 5) && (get(entry_block[i], "SMS", 0) >= 1 || get(entry_block[i], "SMV", 0) >= 1)) >= 1 - 0.001
-    )
-
-
     # G, K and L
     @constraint(model, 
     sum(X[i] for i in 1:length(P) if ((get(exit_block[i], "DMV", 0) >= 1 || get(exit_block[i], "DMS", 0) >= 1) && (get(entry_block[i], "DMS", 0) >= 1 || get(entry_block[i], "DMV", 0) >= 1)) || get(exit_block[i], "DMS", 0)==6 || get(exit_block[i], "DMV", 0)==6) <= 3 + 0.001
