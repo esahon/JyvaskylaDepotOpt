@@ -66,7 +66,16 @@ BUS_TYPE_MAPPING = {
 }
 
 def all_arrivals_departures(file_paths):
-    """Return all arrivals and departures from the bus list."""
+    """
+    Return all arrivals and departures from the bus list.
+    
+    Args:
+        file_paths (list): List of file paths to the Excel files.
+
+    Returns:
+        list: List of Bus objects with their respective arrival and departure times.
+    
+    """
 
     # Lataa Excel-tiedosto ja valitse vain Tunnus ja Lähtöaika
     df = pd.read_excel(file_paths[0], sheet_name=0, usecols=["Tunnus", "Lähtöaika", "Saapumisaika"])
@@ -131,15 +140,7 @@ def all_arrivals_departures(file_paths):
         df = df[df["Tunnus"].apply(contains_valid_prefix)]
         df_2 = df_2[df_2["Tunnus"].apply(contains_valid_prefix)]
 
-        # Merge the dataframes for "Tunnus", "Lähtöaika", and "Saapumisaika"
-        #df_combined = pd.merge(
-        #    df,
-        #    df_2,
-        #    on="Tunnus",
-        #    how="inner"
-        #)
-        #df_combined = df_combined.dropna(subset=["Tunnus", "Lähtöaika", "Saapumisaika"])  # Poista tyhjät rivit
-        #df_combined["Tunnus"] = df_combined["Tunnus"].str.strip()  # Poista ylimääräiset välilyönnit
+        
         df["Tunnus"] = df["Tunnus"].str.strip()  # Poista ylimääräiset välilyönnit
         df_2["Tunnus"] = df_2["Tunnus"].str.strip()  # Poista ylimääräiset välilyönnit
 
@@ -206,15 +207,7 @@ def all_arrivals_departures(file_paths):
                 elif i == 1:
                     bus.departure_time_LA = departure_time
                 elif i == 2:
-                    bus.departure_time_SU = departure_time
-
-
-    # Print the bus objects for debugging
-    #for bus in busses:
-    #    print(bus)
-    #for bus in busses:
-    #    if bus.bus_id == "SVV703":
-    #        print(bus)  
+                    bus.departure_time_SU = departure_time 
 
     print("Nro of buses:")
     print(len(busses))

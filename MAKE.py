@@ -9,7 +9,6 @@ from excel_fill import fill_departures_to_excel, fill_arrivals_to_excel
 
 # Load Julia script
 Main.include("k_position_approach.jl")
-Main.include("k_position_approach_PELA.jl")  # Load the correct Julia script
 
 class Bus:
     def __init__(self, bus_id, bus_fuel, bus_type, bus_color):
@@ -67,7 +66,16 @@ BUS_TYPE_MAPPING = {
 }
 
 def all_arrivals_departures(file_paths):
-    """Return all arrivals and departures from the bus list."""
+    """
+    Return all arrivals and departures from the bus list.
+    
+    Args:
+        file_paths (list): List of file paths to the Excel files.
+        
+    Returns:
+        list: List of Bus objects with their arrival and departure times.
+        
+    """
 
     # Lataa Excel-tiedosto ja valitse vain Tunnus ja Lähtöaika
     df = pd.read_excel(file_paths[0], sheet_name=0, usecols=["Tunnus", "Lähtöaika", "Saapumisaika"])
@@ -132,15 +140,6 @@ def all_arrivals_departures(file_paths):
         df = df[df["Tunnus"].apply(contains_valid_prefix)]
         df_2 = df_2[df_2["Tunnus"].apply(contains_valid_prefix)]
 
-        # Merge the dataframes for "Tunnus", "Lähtöaika", and "Saapumisaika"
-        #df_combined = pd.merge(
-        #    df,
-        #    df_2,
-        #    on="Tunnus",
-        #    how="inner"
-        #)
-        #df_combined = df_combined.dropna(subset=["Tunnus", "Lähtöaika", "Saapumisaika"])  # Poista tyhjät rivit
-        #df_combined["Tunnus"] = df_combined["Tunnus"].str.strip()  # Poista ylimääräiset välilyönnit
         df["Tunnus"] = df["Tunnus"].str.strip()  # Poista ylimääräiset välilyönnit
         df_2["Tunnus"] = df_2["Tunnus"].str.strip()  # Poista ylimääräiset välilyönnit
 
@@ -151,7 +150,6 @@ def all_arrivals_departures(file_paths):
         df_2["Lähtöaika"] = pd.to_datetime(df_2["Lähtöaika"], format="%H:%M:%S", errors="coerce").apply(
             lambda x: x.hour + x.minute / 60 if pd.notnull(x) else None
         )
-        
         
         # Group by "Tunnus" and get the smallest "Lähtöaika" and largest "Saapumisaika"
         df = df.groupby("Tunnus").agg(
@@ -210,13 +208,6 @@ def all_arrivals_departures(file_paths):
                     bus.departure_time_SU = departure_time
 
 
-    # Print the bus objects for debugging
-    #for bus in busses:
-    #    print(bus)
-    #for bus in busses:
-    #    if bus.bus_id == "SVV703":
-    #        print(bus)  
-
     print("Nro of buses:")
     print(len(busses))
 
@@ -224,7 +215,6 @@ def all_arrivals_departures(file_paths):
 
 def adjust_none_arrivals(busses):
     """Adjust buses with None in arrival or departure times by adding 24 hours."""
-    count = 0
     for bus in busses:
         if bus.arrival_time_MAKE is None:
             bus.arrival_time_MAKE = 24.0  
@@ -267,16 +257,9 @@ if __name__ == "__main__":
             bus.bus_type = BUS_TYPE_MAPPING["SMV"]["type"]
             bus.bus_color = BUS_TYPE_MAPPING["SMV"]["color"]
 
-    # Adjust None arrival times
-    #adjust_none_arrivals(busses)
-
-    # PITÄÄ LISÄTÄ None aikoihin +24.00 per None arrival
-
+    # None times +24.00 per None arrival
+    # Optional. This was one of our approaches for weekend problems
     #adjusted_departure_times = adjustDeparture(busses, "make")
-    #for bus in busses:
-    #    print(bus.__repr__)
-
-
 
     # Remove buses with None values in any of the arrival or departure times
     busses = [
@@ -323,12 +306,6 @@ if __name__ == "__main__":
 
     print(f"\nArrivals: {len(arrivals_list_MAKE)}")
     print(f"\nDepartures: {len(departures_list_TITO)}")
-
-    #print(arrivals_list_MAKE[:4])
-    #print("Nro of buses in arrivals_list_MAKE:")
-    #print(len(arrivals_list_MAKE))
-    #print("Nro of buses in departures_list_TITO:")
-    #print(len(departures_list_TITO))
 
     l = 12  # Number of lanes
     v = 6  # Total number of bus slots

@@ -3,12 +3,14 @@ import openpyxl
 
 def fill_departures_to_excel(file_path, departures_mapping):
     """
-    Fill Excel with departure and arrival lane assignments.
+    Fill Excel with departure lane assignments.
     
     Args:
         file_path: Path to the Excel file
         departures_mapping: Dictionary mapping Lane objects to lists of bus IDs (from buses_mapped)
-        arrivals_mapping: Dictionary mapping Lane objects to lists of bus IDs (from lanes)
+
+    Returns:
+        Nothing, but modifies the Excel file in place.
     """
     workbook = openpyxl.load_workbook(file_path)
     sheet = workbook.active
@@ -152,12 +154,15 @@ def fill_departures_to_excel(file_path, departures_mapping):
 
 def fill_arrivals_to_excel(file_path, arrivals_mapping):
     """
-        Fill Excel with departure and arrival lane assignments.
+        Fill Excel with arrival lane assignments.
         
         Args:
             file_path: Path to the Excel file
-            departures_mapping: Dictionary mapping Lane objects to lists of bus IDs (from buses_mapped)
+            
             arrivals_mapping: Dictionary mapping Lane objects to lists of bus IDs (from lanes)
+
+        Returns:
+            Nothing, but modifies the Excel file in place.
     """
    
     workbook = openpyxl.load_workbook(file_path)
